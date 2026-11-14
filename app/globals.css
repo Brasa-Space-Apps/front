@@ -10,6 +10,8 @@
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
+  --color-orange: var(--orange);
+  --color-green: var(--green);
   --font-sans: var(--font-outfit);
   --font-text: var(--font-inter);
   --font-mono: var(--font-plex-mono);
