@@ -75,7 +75,7 @@ const typicalPeakMonth = [...Array(12).keys()]
   .map((m) => m + 1)
   .sort((a, b) => medianOf(valuesOfMonth(b)) - medianOf(valuesOfMonth(a)))[0];
 
-// 5. Final object (English keys)
+// 5. Final object
 const stats = {
   area: { km2: 3420.5, clipped: false, n_cells: 662 },
   period: { start: `${START_YEAR}-01-01`, end: `${END_YEAR}-12-31` },
@@ -87,11 +87,8 @@ const stats = {
     typical_peak_month: typicalPeakMonth,
   },
   calendar,
-  // The 10 most unusual months (ratio farthest from 1, in log scale)
-  anomalies: allAnomalies
-    .filter((a) => a.ratio !== null && a.ratio > 0)
-    .sort((a, b) => Math.abs(Math.log(b.ratio)) - Math.abs(Math.log(a.ratio)))
-    .slice(0, 10),
+  // Contract: every month in the period (the front picks the most unusual ones)
+  anomalies: allAnomalies,
   last_month: allAnomalies[allAnomalies.length - 1],
   // User-facing text stays in Portuguese
   warnings: ["Área pequena: os anos antes de 2012 têm incerteza maior."],

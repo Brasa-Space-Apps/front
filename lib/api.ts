@@ -1,4 +1,4 @@
-import type { Density, Meta, Query, Stats } from "./types";
+import type { AreaQuery, Density, Meta, Stats } from "./types";
 
 const API = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
 const USE_MOCK = process.env.NEXT_PUBLIC_USE_MOCK === "1";
@@ -17,7 +17,7 @@ async function mock<T>(load: () => Promise<{ default: unknown }>): Promise<T> {
   return (await load()).default as T;
 }
 
-async function post<T>(route: string, body: Query, signal?: AbortSignal): Promise<T> {
+async function post<T>(route: string, body: AreaQuery, signal?: AbortSignal): Promise<T> {
   const res = await fetch(`${API}${route}`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -25,8 +25,9 @@ async function post<T>(route: string, body: Query, signal?: AbortSignal): Promis
     signal,
   });
   if (!res.ok) {
-    const error = await res.json().catch(() => ({}));
-    throw new ApiError(res.status, error.detail ?? "Erro inesperado");
+    const err = await res.json().catch(() => ({}));
+    const msg = typeof err.detail === "string" ? err.detail : "Erro inesperado";
+    throw new ApiError(res.status, msg);
   }
   return res.json();
 }
@@ -38,12 +39,12 @@ export async function getMeta(): Promise<Meta> {
   return res.json();
 }
 
-export const postStats = (q: Query, signal?: AbortSignal): Promise<Stats> =>
+export const postStats = (q: AreaQuery, signal?: AbortSignal): Promise<Stats> =>
   USE_MOCK
     ? mock<Stats>(() => import("@/mocks/stats.json"))
     : post<Stats>("/stats", q, signal);
 
-export const postDensity = (q: Query, signal?: AbortSignal): Promise<Density> =>
+export const postDensity = (q: AreaQuery, signal?: AbortSignal): Promise<Density> =>
   USE_MOCK
     ? mock<Density>(() => import("@/mocks/density.json"))
     : post<Density>("/density", q, signal);
@@ -58,13 +59,13 @@ function saveBlob(blob: Blob, filename: string) {
   URL.revokeObjectURL(url);
 }
 
-export async function downloadCsv(q: Query) {
-  const filename = `brasa_${q.start_date}_${q.end_date}.csv`;
+export async function downloadCsv(q: AreaQuery) {
+  const filename = `brasa_hotspots_${q.start_date}_${q.end_date}.csv`;
 
   if (USE_MOCK) {
     await wait(400);
     const csv =
-      "data,hora_utc,latitude,longitude,satelite,confianca,frp,dia_noite,h3,fator\n" +
+      "date,time_utc,latitude,longitude,satellite,confidence,frp,day_night,h3,factor\n" +
       "2020-09-14,1712,-18.9123,-57.3310,SNPP,n,12.4,D,8761a4b2cffffff,1.0\n";
     return saveBlob(new Blob([csv], { type: "text/csv" }), filename);
   }

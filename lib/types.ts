@@ -1,27 +1,38 @@
-import type { Feature, FeatureCollection, Polygon, MultiPolygon } from "geojson";
-export type Geometry = Polygon;
+import type {
+  Feature,
+  FeatureCollection,
+  MultiPolygon,
+  Polygon,
+} from "geojson";
 
-export interface Query {
+export type Geometry = Polygon | MultiPolygon;
+
+export interface AreaQuery {
   geometry: Geometry;
   start_date: string;
   end_date: string;
 }
 
-export interface Meta {
-  period: { start: string; end: string };
-  cutoff_date: string;
-  unit: string;
-  pantanal_boundary: Feature<Polygon | MultiPolygon>;
-  c1day_factors: Record<string, number>;
+export interface Period {
+  start: string;
+  end: string;
 }
 
-export interface CalendarCell {
+export interface Meta {
+  period: Period;
+  data_cutoff: string;
+  unit: string;
+  pantanal_boundary: Feature<GeoJSON.Polygon | MultiPolygon>;
+  factors: Record<string, number>; // "1".."12"
+}
+
+export interface MonthValue {
   year: number;
   month: number;
   value: number;
 }
 
-export interface Anomaly extends CalendarCell {
+export interface Anomaly extends MonthValue {
   median: number;
   ratio: number | null;
   percentile: number;
@@ -29,17 +40,17 @@ export interface Anomaly extends CalendarCell {
 
 export interface Stats {
   area: { km2: number; clipped: boolean; n_cells: number };
-  period: { start: string; end: string };
+  period: Period;
   indicators: {
     total: number;
     annual_mean: number;
-    worst_year: { year: number; value: number };
-    peak_month: { year: number; month: number; value: number };
-    typical_peak_month: number;
+    worst_year: { year: number; value: number } | null;
+    peak_month: MonthValue | null;
+    typical_peak_month: number | null;
   };
-  calendar: CalendarCell[];
-  anomalies: Anomaly[];
-  last_month: Anomaly;
+  calendar: MonthValue[];
+  anomalies: Anomaly[]; // every month in the period
+  last_month: Anomaly | null;
   warnings: string[];
 }
 
