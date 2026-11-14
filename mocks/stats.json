@@ -3622,7 +3622,5 @@
     "ratio": 0.64,
     "percentile": 17
   },
-  "warnings": [
-    "Área pequena: os anos antes de 2012 têm incerteza maior."
-  ]
+    "warnings": []
 }
