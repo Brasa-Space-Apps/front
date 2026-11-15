@@ -12,9 +12,11 @@ import type { Locale, MonthValue } from "@/lib/types";
 export default function YearBars({ calendar, worstYear, locale }: { calendar: MonthValue[]; worstYear: number | null; locale: Locale }) {
   const t = getCopy(locale);
   const [colors, setColors] = useState<ThemeColors>(readThemeColors);
+  const [reducedMotion, setReducedMotion] = useState(false);
   useEffect(() => {
     const update = () => setColors(readThemeColors());
     update();
+    setReducedMotion(window.matchMedia("(prefers-reduced-motion: reduce)").matches);
     return subscribeToTheme(update);
   }, []);
   const byYear = new globalThis.Map<number, number>();
@@ -22,7 +24,10 @@ export default function YearBars({ calendar, worstYear, locale }: { calendar: Mo
   const years = Array.from(byYear.keys()).sort((a, b) => a - b);
 
   const option = {
-    animation: false,
+    animation: !reducedMotion,
+    animationDuration: 550,
+    animationEasing: "cubicOut",
+    animationDelay: (idx: number) => idx * 20,
     textStyle: { color: colors.text },
     grid: { left: 48, right: 12, top: 12, bottom: 28 },
     tooltip: {
@@ -41,14 +46,15 @@ export default function YearBars({ calendar, worstYear, locale }: { calendar: Mo
       type: "bar",
       data: years.map((y) => ({
         value: Math.round((byYear.get(y) ?? 0) * 10) / 10,
-        itemStyle: { color: y === worstYear ? colors.accent : colors.muted },
+        itemStyle: { color: y === worstYear ? colors.accent : colors.muted, borderRadius: [2, 2, 0, 0] },
       })),
+      emphasis: { itemStyle: { opacity: 0.85 } },
       barMaxWidth: 18,
     }],
   };
 
   return (
-    <figure>
+    <figure className="animate-fade-in-up" style={{ animationDelay: "240ms" }}>
       <figcaption className="mb-2 text-xs font-semibold uppercase tracking-[0.12em] text-fg">{t.activityPerYear}</figcaption>
       <ReactECharts option={option} style={{ height: 220 }} notMerge
                     opts={{ renderer: "svg" }} aria-label={t.chartYearLabel} />

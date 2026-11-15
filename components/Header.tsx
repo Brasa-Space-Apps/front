@@ -1,8 +1,10 @@
 "use client";
 
-import type { Locale } from "@/lib/types";
-import { getCopy } from "@/lib/i18n";
+import Link from "next/link";
+
 import SettingsMenu from "@/components/SettingsMenu";
+import { getCopy } from "@/lib/i18n";
+import type { Locale } from "@/lib/types";
 
 export default function Header({ locale }: { locale: Locale }) {
   const t = getCopy(locale);
@@ -14,7 +16,15 @@ export default function Header({ locale }: { locale: Locale }) {
           {t.tagline}
         </p>
       </div>
-      <SettingsMenu locale={locale} />
+      <nav aria-label={t.mainNav} className="flex items-center gap-4">
+        <Link
+          href="/how-it-works"
+          className="rounded-sm text-sm font-medium text-fg/85 underline underline-offset-4 transition-colors hover:text-fg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+        >
+          {t.howItWorks}
+        </Link>
+        <SettingsMenu locale={locale} />
+      </nav>
     </header>
   );
 }

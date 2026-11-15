@@ -10,6 +10,7 @@ export type Status = "idle" | "loading" | "result" | "no_fire" | "outside" | "er
 export type MetaStatus = "loading" | "waking" | "ready" | "failed";
 
 const DEBOUNCE_MS = 300;
+const SLOW_MS = 8000; // after this, tell the user the server may be waking up
 const META_RETRY_DELAYS = [2000, 5000, 10000, 20000, 30000];
 const ANALYSIS_RETRY_DELAY = 1000;
 
@@ -52,6 +53,9 @@ export function useAnalysis() {
   const [density, setDensity] = useState<Density | null>(null);
   const [error, setError] = useState<string | null>(null);
 
+  const [attempt, setAttempt] = useState(0); // bumped by retry()
+  const [slow, setSlow] = useState(false);   // request is taking long
+
   const controller = useRef<AbortController | null>(null);
 
   // 1. /meta with bounded retries for sleeping/unreachable servers
@@ -62,7 +66,7 @@ export function useAnalysis() {
     async function loadMeta() {
       setMetaStatus("loading");
       setMetaError(null);
-      for (let attempt = 0; attempt <= META_RETRY_DELAYS.length; attempt += 1) {
+      for (let tries = 0; tries <= META_RETRY_DELAYS.length; tries += 1) {
         try {
           const m = await getMeta(ctrl.signal);
           if (cancelled) return;
@@ -73,7 +77,7 @@ export function useAnalysis() {
           return;
         } catch (e) {
           if (cancelled || isAbortError(e)) return;
-          const delay = META_RETRY_DELAYS[attempt];
+          const delay = META_RETRY_DELAYS[tries];
           if (!isNetworkError(e) || delay === undefined) {
             setMetaError(e instanceof Error ? e.message : String(e));
             setMetaStatus("failed");
@@ -96,9 +100,11 @@ export function useAnalysis() {
     };
   }, [metaRetry]);
 
-  // 2. /stats + /density whenever the area or the period changes
+  // 2. /stats + /density whenever the area, the period or a retry changes
   useEffect(() => {
     if (!geometry || !startDate || !endDate || startDate > endDate) return;
+
+    let slowTimer: ReturnType<typeof setTimeout> | undefined;
 
     const timer = setTimeout(async () => {
       controller.current?.abort();
@@ -108,38 +114,53 @@ export function useAnalysis() {
       const query: AreaQuery = { geometry, start_date: startDate, end_date: endDate };
       setStatus("loading");
       setError(null);
-      for (let attempt = 0; attempt < 2; attempt += 1) {
-        try {
-          const [s, d] = await Promise.all([
-            postStats(query, ctrl.signal),
-            postDensity(query, ctrl.signal),
-          ]);
-          if (ctrl.signal.aborted) return;
-          setStats(s);
-          setDensity(d);
-          setStatus(s.indicators.total === 0 ? "no_fire" : "result");
-          return;
-        } catch (e) {
-          if (isAbortError(e)) return;
-          if (attempt === 0 && isNetworkError(e)) {
-            try {
-              await wait(ANALYSIS_RETRY_DELAY, ctrl.signal);
-              continue;
-            } catch {
-              return;
+      setSlow(false);
+      slowTimer = setTimeout(() => setSlow(true), SLOW_MS);
+
+      try {
+        // one silent retry on network errors (e.g. the server was asleep)
+        for (let tries = 0; tries < 2; tries += 1) {
+          try {
+            const [s, d] = await Promise.all([
+              postStats(query, ctrl.signal),
+              postDensity(query, ctrl.signal),
+            ]);
+            if (ctrl.signal.aborted) return;
+            setStats(s);
+            setDensity(d);
+            setStatus(s.indicators.total === 0 ? "no_fire" : "result");
+            return;
+          } catch (e) {
+            if (isAbortError(e)) return;
+            if (tries === 0 && isNetworkError(e)) {
+              try {
+                await wait(ANALYSIS_RETRY_DELAY, ctrl.signal);
+                continue;
+              } catch {
+                return;
+              }
             }
+            setStats(null);
+            setDensity(null);
+            setError(e instanceof Error ? e.message : String(e));
+            setStatus(e instanceof ApiError && e.status === 400 ? "outside" : "error");
+            return;
           }
-          setStats(null);
-          setDensity(null);
-          setError(e instanceof Error ? e.message : String(e));
-          setStatus(e instanceof ApiError && e.status === 400 ? "outside" : "error");
-          return;
         }
+      } finally {
+        clearTimeout(slowTimer);
+        if (!ctrl.signal.aborted) setSlow(false);
       }
     }, DEBOUNCE_MS);
 
-    return () => clearTimeout(timer);
-  }, [geometry, startDate, endDate]);
+    return () => {
+      clearTimeout(timer);
+      clearTimeout(slowTimer);
+    };
+  }, [geometry, startDate, endDate, attempt]);
+
+  const retry = useCallback(() => setAttempt((n) => n + 1), []);
+  const retryMeta = useCallback(() => setMetaRetry((n) => n + 1), []);
 
   const clear = useCallback(() => {
     controller.current?.abort();
@@ -147,6 +168,7 @@ export function useAnalysis() {
     setStats(null);
     setDensity(null);
     setError(null);
+    setSlow(false);
     setStatus("idle");
   }, []);
 
@@ -154,10 +176,11 @@ export function useAnalysis() {
     geometry && startDate && endDate ? { geometry, start_date: startDate, end_date: endDate } : null;
 
   return {
-    meta, metaError, metaStatus, retryMeta: () => setMetaRetry((value) => value + 1),
+    meta, metaError, metaStatus, retryMeta,
     geometry, setGeometry,
     startDate, setStartDate, endDate, setEndDate,
     status, stats, density, error,
+    slow, retry,
     query, clear,
   };
 }

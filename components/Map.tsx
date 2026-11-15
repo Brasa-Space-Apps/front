@@ -21,9 +21,20 @@ const DARK_STYLE_URL = process.env.NEXT_PUBLIC_MAP_STYLE_DARK ?? STYLE_URL;
 const EMPTY: GeoJSON.FeatureCollection = { type: "FeatureCollection", features: [] };
 
 type Mode = "none" | "polygon" | "rectangle";
+type Corner = "top-left" | "top-right" | "bottom-left" | "bottom-right";
 type LngLat = [number, number];
 const FALLBACK_BOUNDS: [LngLat, LngLat] = [[-59.5, -22.5], [-54.5, -15.5]];
 type ToolIconName = "polygon" | "rectangle" | "region" | "clear" | "undo" | "cancel";
+
+const CORNER_CLASS: Record<Corner, string> = {
+  "top-left": "left-3 top-14",
+  "top-right": "right-12 top-3",
+  "bottom-left": "left-3 bottom-3",
+  "bottom-right": "right-3 bottom-8",
+};
+
+const TOOL_CLASS =
+  "flex cursor-pointer items-center gap-1.5 rounded-md border border-line px-3 py-2 text-sm font-medium shadow-sm transition-all duration-150 active:scale-[0.98] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent";
 
 interface Props {
   boundary: Meta["pantanal_boundary"] | null;
@@ -127,7 +138,9 @@ function addOverlayLayers(map: maplibregl.Map) {
 
 export default function Map({ boundary, drawn, density, onDraw, onClear, locale }: Props) {
   const t = getCopy(locale);
+  const wrapperRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  const legendRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<maplibregl.Map | null>(null);
   const initialBoundaryRef = useRef(boundary ?? PANTANAL_BOUNDARY);
   const lastBoundaryRef = useRef<Meta["pantanal_boundary"] | null>(null);
@@ -142,6 +155,17 @@ export default function Map({ boundary, drawn, density, onDraw, onClear, locale 
       ? "dark"
       : "light",
   );
+  const [corner, setCorner] = useState<Corner>("bottom-right");
+  const [dragPos, setDragPos] = useState<{ left: number; top: number } | null>(null);
+  const dragStateRef = useRef<{
+    pointerId: number;
+    offsetX: number;
+    offsetY: number;
+    width: number;
+    height: number;
+    wrapW: number;
+    wrapH: number;
+  } | null>(null);
 
   // refs read inside map event handlers (registered once)
   const modeRef = useRef<Mode>("none");
@@ -362,6 +386,7 @@ export default function Map({ boundary, drawn, density, onDraw, onClear, locale 
 
   const legend = maxValue > 0 ? [0, 0.25, 0.5, 0.75, 1].map((q) => (Math.sqrt(maxValue) * q) ** 2) : [];
 
+  // ------------------------------------------------------------- drawing helpers
   const cancelDrawing = () => {
     pointsRef.current = [];
     setPointCount(0);
@@ -370,15 +395,69 @@ export default function Map({ boundary, drawn, density, onDraw, onClear, locale 
     setMode("none");
   };
 
+  // ------------------------------------------------------------- draggable legend
+  const onLegendPointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (e.button !== 0) return;
+    const wrap = wrapperRef.current;
+    const el = legendRef.current;
+    if (!wrap || !el) return;
+
+    e.stopPropagation();
+    el.setPointerCapture(e.pointerId);
+
+    const wrapRect = wrap.getBoundingClientRect();
+    const elRect = el.getBoundingClientRect();
+    dragStateRef.current = {
+      pointerId: e.pointerId,
+      offsetX: e.clientX - elRect.left,
+      offsetY: e.clientY - elRect.top,
+      width: elRect.width,
+      height: elRect.height,
+      wrapW: wrapRect.width,
+      wrapH: wrapRect.height,
+    };
+    setDragPos({
+      left: elRect.left - wrapRect.left,
+      top: elRect.top - wrapRect.top,
+    });
+  };
+
+  const onLegendPointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
+    const ds = dragStateRef.current;
+    const wrap = wrapperRef.current;
+    if (!ds || ds.pointerId !== e.pointerId || !wrap) return;
+
+    const wrapRect = wrap.getBoundingClientRect();
+    const pad = 8;
+    const maxLeft = Math.max(pad, ds.wrapW - ds.width - pad);
+    const maxTop = Math.max(pad, ds.wrapH - ds.height - pad);
+    const left = Math.min(maxLeft, Math.max(pad, e.clientX - wrapRect.left - ds.offsetX));
+    const top = Math.min(maxTop, Math.max(pad, e.clientY - wrapRect.top - ds.offsetY));
+    setDragPos({ left, top });
+  };
+
+  const onLegendPointerEnd = (e: React.PointerEvent<HTMLDivElement>) => {
+    const ds = dragStateRef.current;
+    if (!ds || ds.pointerId !== e.pointerId) return;
+    dragStateRef.current = null;
+
+    if (dragPos) {
+      const cx = dragPos.left + ds.width / 2;
+      const cy = dragPos.top + ds.height / 2;
+      const isRight = cx >= ds.wrapW / 2;
+      const isBottom = cy >= ds.wrapH / 2;
+      setCorner(`${isBottom ? "bottom" : "top"}-${isRight ? "right" : "left"}`);
+    }
+    setDragPos(null);
+  };
+
   const toolButton = (m: Mode, label: string, icon: ToolIconName) => (
     <button
       type="button"
       onClick={() => setMode(mode === m ? "none" : m)}
       aria-pressed={mode === m}
       aria-label={label}
-      className={`flex items-center gap-1.5 rounded-md border border-line px-3 py-2 text-sm font-medium transition focus:outline-2 focus:outline-offset-2 focus:outline-accent ${
-        mode === m ? "bg-accent text-accent-text" : "bg-surface text-fg hover:bg-surface-2"
-      }`}
+      className={`${TOOL_CLASS} ${mode === m ? "bg-accent text-accent-text" : "bg-surface text-fg hover:bg-surface-2"}`}
     >
       <ToolIcon name={icon} />
       {label}
@@ -386,7 +465,7 @@ export default function Map({ boundary, drawn, density, onDraw, onClear, locale 
   );
 
   return (
-    <div className="relative h-full w-full">
+    <div ref={wrapperRef} className="relative h-full w-full">
       <div ref={containerRef} role="application" aria-label={t.mapAria} className="h-full w-full" />
 
       {/* drawing tools */}
@@ -398,7 +477,7 @@ export default function Map({ boundary, drawn, density, onDraw, onClear, locale 
             type="button"
             onClick={() => { cancelDrawing(); onDraw(boundary.geometry); }}
             aria-label={t.wholeRegion}
-            className="flex items-center gap-1.5 rounded-md border border-line bg-surface px-3 py-2 text-sm font-medium text-fg transition hover:bg-surface-2 focus:outline-2 focus:outline-offset-2 focus:outline-accent"
+            className={`${TOOL_CLASS} bg-surface text-fg hover:bg-surface-2`}
           >
             <ToolIcon name="region" />
             {t.wholeRegion}
@@ -409,7 +488,7 @@ export default function Map({ boundary, drawn, density, onDraw, onClear, locale 
             type="button"
             onClick={() => { cancelDrawing(); onClear(); }}
             aria-label={t.clear}
-            className="flex items-center gap-1.5 rounded-md border border-line bg-surface px-3 py-2 text-sm font-medium text-fg transition hover:bg-surface-2 focus:outline-2 focus:outline-offset-2 focus:outline-accent"
+            className={`${TOOL_CLASS} animate-fade-in bg-surface text-fg hover:bg-surface-2`}
           >
             <ToolIcon name="clear" />
             {t.clear}
@@ -419,8 +498,8 @@ export default function Map({ boundary, drawn, density, onDraw, onClear, locale 
 
       {/* hint while drawing */}
       {mode !== "none" && (
-        <div className="absolute bottom-3 left-3 flex max-w-[calc(100%-1.5rem)] flex-wrap items-center gap-2 rounded-md bg-surface-2 px-3 py-2 text-sm text-fg">
-          <p>{mode === "polygon" ? t.clickPoints : t.clickCorners}</p>
+        <div className="animate-fade-in absolute bottom-3 left-3 flex max-w-[calc(100%-1.5rem)] flex-wrap items-center gap-2 rounded-md bg-surface-2 px-3 py-2 text-sm text-fg shadow-sm">
+          <p role="status">{mode === "polygon" ? t.clickPoints : t.clickCorners}</p>
           {pointCount > 0 && (
             <button
               type="button"
@@ -448,15 +527,31 @@ export default function Map({ boundary, drawn, density, onDraw, onClear, locale 
         </div>
       )}
 
-      {/* density legend */}
+      {/* density legend (draggable, snaps to nearest corner) */}
       {legend.length > 0 && mode === "none" && (
-        <div className="absolute bottom-8 right-3 rounded-md border border-line bg-surface p-2 text-xs text-fg">
-          <p className="mb-1 font-medium">{t.legend}</p>
+        <div
+          ref={legendRef}
+          onPointerDown={onLegendPointerDown}
+          onPointerMove={onLegendPointerMove}
+          onPointerUp={onLegendPointerEnd}
+          onPointerCancel={onLegendPointerEnd}
+          title={t.dragLegend}
+          style={dragPos ? { left: dragPos.left, top: dragPos.top } : undefined}
+          className={`absolute select-none touch-none rounded-md border border-line bg-surface/95 p-2 text-xs text-fg backdrop-blur-[2px] ${
+            dragPos
+              ? "z-20 scale-[1.02] cursor-grabbing shadow-md"
+              : `${CORNER_CLASS[corner]} animate-fade-in cursor-grab shadow-sm transition-shadow hover:shadow`
+          }`}
+        >
+          <p className="mb-1 flex items-center justify-between gap-2 font-medium">
+            <span>{t.legend}</span>
+            <span aria-hidden className="text-[10px] leading-none tracking-tighter text-muted">⋮⋮</span>
+          </p>
           <div className="flex items-center gap-1">
             {VIRIDIS.map((c, i) => (
               <div key={c} className="flex flex-col items-center">
                 <span className="block h-3 w-8" style={{ background: c }} aria-hidden="true" />
-                <span className="mt-0.5 tabular-nums">{fmt(legend[i])}</span>
+                <span className="mt-0.5 tabular-nums">{fmt(legend[i], locale)}</span>
               </div>
             ))}
           </div>
