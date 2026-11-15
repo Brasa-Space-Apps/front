@@ -5,7 +5,127 @@
   --green: #4E6B2C;
   --foreground: #1C1A17;
   --background: #F6F5F2;
+  --surface: #FFFFFF;
+  --surface-muted: #F0EFEC;
+  --border: #D6D3D1;
+  --muted: #57534E;
+  --danger: #9B3515;
+  --danger-surface: #FBEDEA;
+  --shadow: 0 10px 24px rgb(28 26 23 / 14%);
   color-scheme: light;
+}
+
+:root[data-theme="dark"] {
+  --foreground: #F5F1EA;
+  --background: #1B1B1A;
+  --orange: #F18A5F;
+  --green: #B5D47A;
+  --surface: #24211D;
+  --surface-muted: #302C27;
+  --border: #5B554D;
+  --muted: #D1C9BE;
+  --danger: #FF9B78;
+  --danger-surface: #44251D;
+  --shadow: 0 10px 24px rgb(0 0 0 / 42%);
+  color-scheme: dark;
+}
+
+html[data-color-vision="protanopia"] body {
+  filter: url("#protanopia");
+}
+
+html[data-color-vision="deuteranopia"] body {
+  filter: url("#deuteranopia");
+}
+
+html[data-color-vision="tritanopia"] body {
+  filter: url("#tritanopia");
+}
+
+html[data-theme="dark"] .bg-white,
+html[data-theme="dark"] .bg-white\/95 {
+  background-color: var(--surface);
+}
+
+html[data-theme="dark"] .bg-stone-100,
+html[data-theme="dark"] .bg-stone-200 {
+  background-color: var(--surface-muted);
+}
+
+html[data-theme="dark"] .text-stone-600,
+html[data-theme="dark"] .text-stone-700 {
+  color: var(--muted);
+}
+
+html[data-theme="dark"] .text-\[\#1C1A17\] {
+  color: var(--foreground);
+}
+
+html[data-theme="dark"] .text-\[\#B4441B\] {
+  color: var(--danger);
+}
+
+html[data-theme="dark"] .border-stone-200,
+html[data-theme="dark"] .border-stone-300,
+html[data-theme="dark"] .border-foreground\/10,
+html[data-theme="dark"] .border-foreground\/20,
+html[data-theme="dark"] .border-foreground\/30 {
+  border-color: var(--border);
+}
+
+html[data-theme="dark"] .border-\[\#A63C16\]\/40 {
+  border-color: var(--orange);
+}
+
+html[data-theme="dark"] .bg-\[\#FBF1EC\] {
+  background-color: var(--danger-surface);
+}
+
+html[data-theme="dark"] .bg-\[\#1C1A17\] {
+  background-color: var(--surface-muted);
+}
+
+html[data-theme="dark"] .hover\:bg-stone-100:hover {
+  background-color: var(--surface-muted);
+}
+
+html[data-theme="dark"] .hover\:bg-black:hover {
+  background-color: #3A3835;
+}
+
+html[data-theme="dark"] .shadow-lg,
+html[data-theme="dark"] .shadow-sm {
+  box-shadow: var(--shadow);
+}
+
+html[data-theme="dark"] .maplibregl-ctrl-group,
+html[data-theme="dark"] .maplibregl-ctrl-attrib {
+  background: var(--surface);
+  color: var(--foreground);
+}
+
+html[data-theme="dark"] .maplibregl-ctrl-group button {
+  background-color: var(--surface);
+  border-color: var(--border);
+  filter: invert(1) hue-rotate(180deg);
+}
+
+html[data-theme="dark"] .maplibregl-canvas {
+  filter: brightness(0.68) saturate(0.82);
+}
+
+html[data-theme="dark"] .maplibregl-ctrl-attrib a,
+html[data-theme="dark"] .maplibregl-ctrl-attrib {
+  color: var(--muted);
+}
+
+html[data-theme="dark"] input,
+html[data-theme="dark"] select {
+  color-scheme: dark;
+}
+
+html[data-theme="dark"] .echarts svg text {
+  fill: var(--foreground) !important;
 }
 
 @theme inline {

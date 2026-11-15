@@ -1,5 +1,8 @@
+"use client";
+
 import type { Locale } from "@/lib/types";
 import { getCopy } from "@/lib/i18n";
+import SettingsMenu from "@/components/SettingsMenu";
 
 export default function Header({ locale }: { locale: Locale }) {
   const t = getCopy(locale);
@@ -11,9 +14,7 @@ export default function Header({ locale }: { locale: Locale }) {
           {t.tagline}
         </p>
       </div>
-      <a href={locale === "en" ? "/pt-br" : "/en"} className="text-sm font-medium underline">
-        {locale === "en" ? "Português (Brasil)" : "English"}
-      </a>
+      <SettingsMenu locale={locale} />
     </header>
   );
 }
