@@ -1,6 +1,6 @@
 import Dashboard from "@/components/Dashboard";
 import DocumentLanguage from "@/components/DocumentLanguage";
-import Footer from "@/components/Footer";
+
 import Header from "@/components/Header";
 import RootLocaleRedirect from "@/components/RootLocaleRedirect";
 import type { Locale } from "@/lib/types";
@@ -19,7 +19,6 @@ export function LocalizedHome({ locale }: { locale: Locale }) {
       >
         <Header locale={locale} />
         <Dashboard locale={locale} />
-        <Footer />
       </div>
     </>
   );
