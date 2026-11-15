@@ -2,6 +2,7 @@
 // API contract: mirrors back/app/schemas.py. Do not rename fields.
 
 export type Geometry = GeoJSON.Polygon | GeoJSON.MultiPolygon;
+export type Locale = "pt-BR" | "en";
 
 export interface AreaQuery {
   geometry: Geometry;

@@ -74,7 +74,7 @@ export async function downloadCsv(q: AreaQuery): Promise<void> {
   const url = URL.createObjectURL(blob);
   const a = Object.assign(document.createElement("a"), {
     href: url,
-    download: `brasa_hotspots_${q.start_date}_${q.end_date}.csv`,
+    download: `brasa_detections_${q.start_date}_${q.end_date}.csv`,
   });
   a.click();
   URL.revokeObjectURL(url);

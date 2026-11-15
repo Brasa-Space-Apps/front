@@ -3,11 +3,15 @@ import Footer from "@/components/Footer";
 import Header from "@/components/Header";
 
 export default function Home() {
+  return <LocalizedHome locale="en" />;
+}
+
+export function LocalizedHome({ locale }: { locale: "pt-BR" | "en" }) {
   return (
-    <div className="flex flex-1 flex-col lg:h-dvh">
-      <Header />
-      <Dashboard />
-      <Footer />
+    <div lang={locale} className="flex flex-1 flex-col lg:h-dvh">
+      <Header locale={locale} />
+      <Dashboard locale={locale} />
+      <Footer locale={locale} />
     </div>
   );
 }

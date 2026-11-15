@@ -5,8 +5,11 @@ import { useState } from "react";
 
 import { downloadCsv } from "@/lib/api";
 import type { AreaQuery } from "@/lib/types";
+import { getCopy } from "@/lib/i18n";
+import type { Locale } from "@/lib/types";
 
-export default function ExportButton({ query }: { query: AreaQuery }) {
+export default function ExportButton({ query, locale }: { query: AreaQuery; locale: Locale }) {
+  const t = getCopy(locale);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -30,10 +33,10 @@ export default function ExportButton({ query }: { query: AreaQuery }) {
         disabled={busy}
         className="w-full rounded-md bg-[#1C1A17] px-4 py-2.5 text-sm font-medium text-white hover:bg-black disabled:opacity-60"
       >
-        {busy ? "Preparing CSV…" : "Download hotspots (CSV)"}
+        {busy ? t.preparing : t.export}
       </button>
       <p className="mt-1 text-xs text-stone-600">
-        Original NASA FIRMS detections in the area and period, with the harmonization factor.
+        {t.exportHelp}
       </p>
       {error && <p role="alert" className="mt-1 text-xs text-[#B4441B]">{error}</p>}
     </div>

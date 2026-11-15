@@ -4,9 +4,11 @@
 import ReactECharts from "echarts-for-react";
 
 import { BRAND, fmt, fmt0 } from "@/lib/format";
-import type { MonthValue } from "@/lib/types";
+import { getCopy } from "@/lib/i18n";
+import type { Locale, MonthValue } from "@/lib/types";
 
-export default function YearBars({ calendar, worstYear }: { calendar: MonthValue[]; worstYear: number | null }) {
+export default function YearBars({ calendar, worstYear, locale }: { calendar: MonthValue[]; worstYear: number | null; locale: Locale }) {
+  const t = getCopy(locale);
   const byYear = new globalThis.Map<number, number>();
   for (const c of calendar) byYear.set(c.year, (byYear.get(c.year) ?? 0) + c.value);
   const years = Array.from(byYear.keys()).sort((a, b) => a - b);
@@ -16,10 +18,10 @@ export default function YearBars({ calendar, worstYear }: { calendar: MonthValue
     grid: { left: 48, right: 12, top: 12, bottom: 28 },
     tooltip: {
       trigger: "axis",
-      formatter: (ps: { name: string; value: number }[]) => `<b>${ps[0].name}</b><br/>${fmt(ps[0].value)} fire days`,
+      formatter: (ps: { name: string; value: number }[]) => `<b>${ps[0].name}</b><br/>${fmt(ps[0].value, locale)} ${t.fireDaysMetric}`,
     },
     xAxis: { type: "category", data: years.map(String), axisTick: { show: false }, axisLabel: { interval: 1 } },
-    yAxis: { type: "value", min: 0, axisLabel: { formatter: (v: number) => fmt0(v) } },
+    yAxis: { type: "value", min: 0, axisLabel: { formatter: (v: number) => fmt0(v, locale) } },
     series: [{
       type: "bar",
       data: years.map((y) => ({
@@ -32,9 +34,9 @@ export default function YearBars({ calendar, worstYear }: { calendar: MonthValue
 
   return (
     <figure>
-      <figcaption className="mb-2 text-sm font-semibold text-[#1C1A17]">Fire activity per year</figcaption>
+      <figcaption className="mb-2 text-sm font-semibold text-[#1C1A17]">{t.activityPerYear}</figcaption>
       <ReactECharts option={option} style={{ height: 220 }} notMerge
-                    opts={{ renderer: "svg" }} aria-label="Sum of days with fire across all ~5 km² cells in the area" />
+                    opts={{ renderer: "svg" }} aria-label={t.chartYearLabel} />
     </figure>
   );
 }

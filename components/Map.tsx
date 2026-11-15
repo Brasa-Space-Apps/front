@@ -6,7 +6,8 @@ import "maplibre-gl/dist/maplibre-gl.css";
 import { useEffect, useRef, useState } from "react";
 
 import { BRAND, VIRIDIS, fmt } from "@/lib/format";
-import type { Density, Geometry, Meta } from "@/lib/types";
+import { getCopy } from "@/lib/i18n";
+import type { Density, Geometry, Locale, Meta } from "@/lib/types";
 
 // MapLibre 6 loads its worker from a separate file, served from /public
 maplibregl.setWorkerUrl("/maplibre-gl-worker.mjs");
@@ -25,6 +26,7 @@ interface Props {
   density: Density | null;
   onDraw: (geometry: Geometry) => void;
   onClear: () => void;
+  locale: Locale;
 }
 
 function bbox(geometry: GeoJSON.Geometry): [LngLat, LngLat] {
@@ -53,7 +55,8 @@ function setData(map: maplibregl.Map, id: string, data: GeoJSON.GeoJSON) {
   (map.getSource(id) as maplibregl.GeoJSONSource | undefined)?.setData(data);
 }
 
-export default function Map({ boundary, drawn, density, onDraw, onClear }: Props) {
+export default function Map({ boundary, drawn, density, onDraw, onClear, locale }: Props) {
+  const t = getCopy(locale);
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<maplibregl.Map | null>(null);
   const [ready, setReady] = useState(false);
@@ -63,8 +66,11 @@ export default function Map({ boundary, drawn, density, onDraw, onClear }: Props
   const modeRef = useRef<Mode>("none");
   const pointsRef = useRef<LngLat[]>([]);
   const onDrawRef = useRef(onDraw);
-  onDrawRef.current = onDraw;
   const fittedRef = useRef(false);
+
+  useEffect(() => {
+    onDrawRef.current = onDraw;
+  }, [onDraw]);
 
   // ------------------------------------------------------------- create the map once
   useEffect(() => {
@@ -249,8 +255,9 @@ export default function Map({ boundary, drawn, density, onDraw, onClear }: Props
       type="button"
       onClick={() => setMode(mode === m ? "none" : m)}
       aria-pressed={mode === m}
+      aria-label={label}
       className={`rounded-md px-3 py-2 text-sm font-medium shadow-sm transition ${
-        mode === m ? "bg-[#D4501C] text-white" : "bg-white text-[#1C1A17] hover:bg-stone-100"
+        mode === m ? "bg-[#A63C16] text-white" : "bg-white text-[#1C1A17] hover:bg-stone-100"
       }`}
     >
       {label}
@@ -259,28 +266,30 @@ export default function Map({ boundary, drawn, density, onDraw, onClear }: Props
 
   return (
     <div className="relative h-full w-full">
-      <div ref={containerRef} className="h-full w-full" />
+      <div ref={containerRef} role="application" aria-label={t.mapAria} className="h-full w-full" />
 
       {/* drawing tools */}
       <div className="absolute left-3 top-3 flex flex-wrap gap-2">
-        {toolButton("polygon", "Polygon")}
-        {toolButton("rectangle", "Rectangle")}
+        {toolButton("polygon", t.polygon)}
+        {toolButton("rectangle", t.rectangle)}
         {boundary && (
           <button
             type="button"
             onClick={() => { setMode("none"); onDraw(boundary.geometry); }}
+            aria-label={t.wholeRegion}
             className="rounded-md bg-white px-3 py-2 text-sm font-medium text-[#1C1A17] shadow-sm hover:bg-stone-100"
           >
-            Whole Pantanal
+            {t.wholeRegion}
           </button>
         )}
         {drawn && (
           <button
             type="button"
             onClick={() => { setMode("none"); onClear(); }}
+            aria-label={t.clear}
             className="rounded-md bg-white px-3 py-2 text-sm font-medium text-[#1C1A17] shadow-sm hover:bg-stone-100"
           >
-            Clear
+            {t.clear}
           </button>
         )}
       </div>
@@ -289,19 +298,19 @@ export default function Map({ boundary, drawn, density, onDraw, onClear }: Props
       {mode !== "none" && (
         <p className="absolute bottom-3 left-3 rounded-md bg-[#1C1A17]/85 px-3 py-2 text-sm text-white">
           {mode === "polygon"
-            ? "Click to add points. Double-click or click the first point to finish. Esc cancels."
-            : "Click one corner, then the opposite corner. Esc cancels."}
+            ? t.clickPoints
+            : t.clickCorners}
         </p>
       )}
 
       {/* density legend */}
       {legend.length > 0 && mode === "none" && (
         <div className="absolute bottom-8 right-3 rounded-md bg-white/95 p-2 text-xs text-[#1C1A17] shadow-sm">
-          <p className="mb-1 font-medium">Fire days per hexagon</p>
+          <p className="mb-1 font-medium">{t.legend}</p>
           <div className="flex items-center gap-1">
             {VIRIDIS.map((c, i) => (
               <div key={c} className="flex flex-col items-center">
-                <span className="block h-3 w-8" style={{ background: c }} />
+                <span className="block h-3 w-8" style={{ background: c }} aria-hidden="true" />
                 <span className="mt-0.5 tabular-nums">{fmt(legend[i])}</span>
               </div>
             ))}

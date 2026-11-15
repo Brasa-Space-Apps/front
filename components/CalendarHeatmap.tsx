@@ -3,16 +3,19 @@
 
 import ReactECharts from "echarts-for-react";
 
-import { BRAND, MONTHS, VIRIDIS, fmt, monthLabel } from "@/lib/format";
-import type { Anomaly, MonthValue } from "@/lib/types";
+import { BRAND, MONTHS, MONTHS_PT, VIRIDIS, fmt, monthLabel } from "@/lib/format";
+import { getCopy } from "@/lib/i18n";
+import type { Anomaly, Locale, MonthValue } from "@/lib/types";
 
 interface Props {
   calendar: MonthValue[];
   lastMonth: Anomaly | null;
+  locale: Locale;
 }
 
 /** Year x month heatmap. Colour uses log10(1 + value) so quiet months stay readable. */
-export default function CalendarHeatmap({ calendar, lastMonth }: Props) {
+export default function CalendarHeatmap({ calendar, lastMonth, locale }: Props) {
+  const t = getCopy(locale);
   const years = Array.from(new Set(calendar.map((c) => c.year))).sort((a, b) => a - b);
   const max = calendar.reduce((m, c) => Math.max(m, c.value), 0);
   const logMax = Math.log10(1 + max) || 1;
@@ -30,9 +33,9 @@ export default function CalendarHeatmap({ calendar, lastMonth }: Props) {
     grid: { left: 44, right: 12, top: 8, bottom: 64 },
     tooltip: {
       formatter: (p: { value: number[] }) =>
-        `<b>${monthLabel(p.value[4], p.value[5])}</b><br/>${fmt(p.value[3])} fire days`,
+        `<b>${monthLabel(p.value[4], p.value[5], locale)}</b><br/>${fmt(p.value[3], locale)} ${t.fireDaysMetric}`,
     },
-    xAxis: { type: "category", data: MONTHS, splitArea: { show: false }, axisTick: { show: false } },
+    xAxis: { type: "category", data: locale === "pt-BR" ? MONTHS_PT : MONTHS, splitArea: { show: false }, axisTick: { show: false } },
     yAxis: { type: "category", data: years.map(String), inverse: true, axisTick: { show: false } },
     visualMap: {
       type: "continuous",
@@ -44,9 +47,9 @@ export default function CalendarHeatmap({ calendar, lastMonth }: Props) {
       left: "center",
       bottom: 4,
       itemHeight: 160,
-      text: [fmt(max), "0"],
+      text: [`${fmt(max, locale)} ${t.fireDaysMetric}`, "0"],
       calculable: false,
-      formatter: (v: number) => fmt(10 ** v - 1),
+      formatter: (v: number) => fmt(10 ** v - 1, locale),
     },
     series: [{
       type: "heatmap",
@@ -60,12 +63,12 @@ export default function CalendarHeatmap({ calendar, lastMonth }: Props) {
 
   return (
     <figure>
-      <figcaption className="mb-1 text-sm font-semibold text-[#1C1A17]">Burning calendar</figcaption>
+      <figcaption className="mb-1 text-sm font-semibold text-[#1C1A17]">{t.calendar}</figcaption>
       <p className="mb-2 text-xs text-stone-600">
-        Fire days per month. The outlined cell is the latest month with data.
+        {t.calendarHelp}
       </p>
       <ReactECharts option={option} style={{ height }} notMerge
-                    opts={{ renderer: "svg" }} aria-label="Year by month heatmap of fire days" />
+                    opts={{ renderer: "svg" }} aria-label={`${t.calendar}: ${t.fireDaysMetric}`} />
     </figure>
   );
 }

@@ -10,6 +10,8 @@ import PeriodPicker from "@/components/PeriodPicker";
 import Warnings from "@/components/Warnings";
 import { useAnalysis } from "@/hooks/useAnalysis";
 import { formatDate } from "@/lib/format";
+import { getCopy } from "@/lib/i18n";
+import type { Locale } from "@/lib/types";
 
 // Browser-only pieces: never rendered on the server
 const Map = dynamic(() => import("@/components/Map"), {
@@ -19,9 +21,10 @@ const Map = dynamic(() => import("@/components/Map"), {
 const CalendarHeatmap = dynamic(() => import("@/components/CalendarHeatmap"), { ssr: false });
 const YearBars = dynamic(() => import("@/components/YearBars"), { ssr: false });
 
-function Skeleton() {
+function Skeleton({ locale }: { locale: Locale }) {
+  const t = getCopy(locale);
   return (
-    <div className="space-y-3" aria-busy="true" aria-label="Loading">
+    <div className="space-y-3" aria-busy="true" aria-label={t.loading}>
       <div className="grid grid-cols-2 gap-3">
         {[0, 1, 2, 3].map((i) => <div key={i} className="h-20 animate-pulse rounded-lg bg-stone-200" />)}
       </div>
@@ -31,25 +34,27 @@ function Skeleton() {
   );
 }
 
-export default function Dashboard() {
+export default function Dashboard({ locale }: { locale: Locale }) {
   const a = useAnalysis();
+  const t = getCopy(locale);
 
   return (
     <main className="flex flex-1 flex-col lg:min-h-0 lg:flex-row">
-      <section aria-label="Map of the Brazilian Pantanal" className="h-[50vh] bg-stone-100 lg:h-auto lg:w-3/5">
+      <section aria-label={t.map} className="h-[50vh] bg-stone-100 lg:h-auto lg:w-3/5">
         <Map
           boundary={a.meta?.pantanal_boundary ?? null}
           drawn={a.geometry}
           density={a.density}
           onDraw={a.setGeometry}
           onClear={a.clear}
+          locale={locale}
         />
       </section>
 
-      <aside aria-label="Analysis panel" className="space-y-4 p-4 lg:w-2/5 lg:overflow-y-auto">
+      <aside aria-label={t.analysis} className="space-y-4 p-4 lg:w-2/5 lg:overflow-y-auto">
         {a.metaError && (
           <p role="alert" className="text-sm text-[#B4441B]">
-            Could not reach the API ({a.metaError}). It may be waking up: try again in a minute.
+            {t.apiError} ({a.metaError}). {t.waking}
           </p>
         )}
 
@@ -60,46 +65,46 @@ export default function Dashboard() {
             start={a.startDate}
             end={a.endDate}
             onChange={(s, e) => { a.setStartDate(s); a.setEndDate(e); }}
+            locale={locale}
           />
         )}
 
         {a.status === "idle" && (
           <div className="rounded-lg border border-dashed border-stone-300 p-4 text-sm text-stone-700">
-            <p className="font-medium text-[#1C1A17]">Draw an area to see its fire history</p>
+            <p className="font-medium text-[#1C1A17]">{t.drawTitle}</p>
             <p className="mt-1">
-              Use <b>Polygon</b> or <b>Rectangle</b> on the map, inside the green outline of the Brazilian Pantanal,
-              or click <b>Whole Pantanal</b>.
+              {t.drawHelp}
             </p>
           </div>
         )}
 
-        {a.status === "loading" && <Skeleton />}
+        {a.status === "loading" && <Skeleton locale={locale} />}
 
         {(a.status === "outside" || a.status === "error") && (
-          <div role="alert" className="rounded-lg border border-[#D4501C]/40 bg-[#FBF1EC] p-4 text-sm text-[#1C1A17]">
+          <div role="alert" className="rounded-lg border border-[#A63C16]/40 bg-[#FBF1EC] p-4 text-sm text-[#1C1A17]">
             <p className="font-medium">
-              {a.status === "outside" ? "This area can't be analysed" : "Something went wrong"}
+              {a.status === "outside" ? t.outside : t.error}
             </p>
             <p className="mt-1">{a.error}</p>
-            {a.status === "outside" && <p className="mt-1">Draw inside the green outline of the Brazilian Pantanal.</p>}
+            {a.status === "outside" && <p className="mt-1">{t.drawInside}</p>}
           </div>
         )}
 
         {(a.status === "result" || a.status === "no_fire") && a.stats && a.query && (
           <>
             <Warnings items={a.stats.warnings} />
-            <IndicatorCards stats={a.stats} />
-            <AnomalyPanel lastMonth={a.stats.last_month} anomalies={a.stats.anomalies} />
-            <CalendarHeatmap calendar={a.stats.calendar} lastMonth={a.stats.last_month} />
-            <YearBars calendar={a.stats.calendar} worstYear={a.stats.indicators.worst_year?.year ?? null} />
-            <ExportButton query={a.query} />
+            <IndicatorCards stats={a.stats} locale={locale} />
+            <AnomalyPanel lastMonth={a.stats.last_month} anomalies={a.stats.anomalies} locale={locale} />
+            <CalendarHeatmap calendar={a.stats.calendar} lastMonth={a.stats.last_month} locale={locale} />
+            <YearBars calendar={a.stats.calendar} worstYear={a.stats.indicators.worst_year?.year ?? null} locale={locale} />
+            <ExportButton query={a.query} locale={locale} />
           </>
         )}
 
         {a.meta && (
           <p className="border-t border-stone-200 pt-3 text-xs text-stone-600">
-            Data up to {formatDate(a.meta.data_cutoff)} · Unit: {a.meta.unit} · Source: NASA FIRMS
-            (MODIS Aqua and VIIRS S-NPP), harmonized.
+            {t.dataUpTo} {formatDate(a.meta.data_cutoff, locale)} · {t.unit} · {t.source}: NASA FIRMS
+            (MODIS Aqua and VIIRS S-NPP), {t.harmonized}.
           </p>
         )}
       </aside>
