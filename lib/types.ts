@@ -1,15 +1,11 @@
-import type {
-  Feature,
-  FeatureCollection,
-  MultiPolygon,
-  Polygon,
-} from "geojson";
+// AI-assisted: generated with Claude (Anthropic) and reviewed by the Brasa team.
+// API contract: mirrors back/app/schemas.py. Do not rename fields.
 
-export type Geometry = Polygon | MultiPolygon;
+export type Geometry = GeoJSON.Polygon | GeoJSON.MultiPolygon;
 
 export interface AreaQuery {
   geometry: Geometry;
-  start_date: string;
+  start_date: string; // "YYYY-MM-DD"
   end_date: string;
 }
 
@@ -22,7 +18,7 @@ export interface Meta {
   period: Period;
   data_cutoff: string;
   unit: string;
-  pantanal_boundary: Feature<GeoJSON.Polygon | MultiPolygon>;
+  pantanal_boundary: GeoJSON.Feature<GeoJSON.Polygon | GeoJSON.MultiPolygon>;
   factors: Record<string, number>; // "1".."12"
 }
 
@@ -49,12 +45,9 @@ export interface Stats {
     typical_peak_month: number | null;
   };
   calendar: MonthValue[];
-  anomalies: Anomaly[]; // every month in the period
+  anomalies: Anomaly[]; // every month of the period
   last_month: Anomaly | null;
   warnings: string[];
 }
 
-export type Density = FeatureCollection<
-  Polygon,
-  { h3: string; value: number }
->;
+export type Density = GeoJSON.FeatureCollection<GeoJSON.Polygon, { h3: string; value: number }>;
