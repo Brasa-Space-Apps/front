@@ -150,6 +150,7 @@ export default function Map({ boundary, drawn, density, onDraw, onClear, locale 
   const [ready, setReady] = useState(false);
   const [mode, setMode] = useState<Mode>("none");
   const [pointCount, setPointCount] = useState(0);
+  const [styleVersion, setStyleVersion] = useState(0); // bumps after every setStyle
   const [theme, setTheme] = useState<"light" | "dark">(() =>
     typeof document !== "undefined" && document.documentElement.dataset.theme === "dark"
       ? "dark"
@@ -326,7 +327,7 @@ export default function Map({ boundary, drawn, density, onDraw, onClear, locale 
     map.once("style.load", () => {
       addOverlayLayers(map);
       styleLoadingRef.current = false;
-      setReady(true);
+      setStyleVersion((v) => v + 1); // re-run the effects that fill the layers
     });
     map.setStyle(theme === "dark" ? DARK_STYLE_URL : STYLE_URL);
   }, [theme]);
@@ -341,7 +342,7 @@ export default function Map({ boundary, drawn, density, onDraw, onClear, locale 
     map.getCanvas().style.cursor = mode === "none" ? "" : "crosshair";
     if (mode === "none") map.doubleClickZoom.enable();
     else map.doubleClickZoom.disable();
-  }, [mode, ready]);
+  }, [mode, ready, styleVersion]);
 
   // ------------------------------------------------------------- Pantanal boundary
   useEffect(() => {
@@ -358,14 +359,14 @@ export default function Map({ boundary, drawn, density, onDraw, onClear, locale 
     if (!fittedRef.current) {
       fittedRef.current = true;
     }
-  }, [boundary, ready]);
+  }, [boundary, ready, styleVersion]);
 
   // ------------------------------------------------------------- drawn area
   useEffect(() => {
     const map = mapRef.current;
     if (!map || !ready || styleLoadingRef.current) return;
     setData(map, "drawn", drawn ? { type: "Feature", properties: {}, geometry: drawn } : EMPTY);
-  }, [drawn, ready]);
+  }, [drawn, ready, styleVersion]);
 
   // ------------------------------------------------------------- density
   const maxValue = density?.features.reduce((m, f) => Math.max(m, f.properties.value), 0) ?? 0;
@@ -382,7 +383,7 @@ export default function Map({ boundary, drawn, density, onDraw, onClear, locale 
         0, VIRIDIS[0], s * 0.25, VIRIDIS[1], s * 0.5, VIRIDIS[2], s * 0.75, VIRIDIS[3], s, VIRIDIS[4],
       ]);
     }
-  }, [density, maxValue, ready]);
+  }, [density, maxValue, ready, styleVersion]);
 
   const legend = maxValue > 0 ? [0, 0.25, 0.5, 0.75, 1].map((q) => (Math.sqrt(maxValue) * q) ** 2) : [];
 
