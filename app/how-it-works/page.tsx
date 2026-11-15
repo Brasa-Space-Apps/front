@@ -9,6 +9,13 @@ export const metadata: Metadata = {
   description: "How brasa builds the fire history of the Brazilian Pantanal.",
 };
 
+/**
+ * Folder inside public/ where the images live.
+ * public/how-it-works/fig5_validation.png  ->  "/how-it-works/fig5_validation.png"
+ * If you put the files directly in public/, set this to "".
+ */
+const IMG = "/how-it-works";
+
 /* ------------------------------------------------------------------ */
 /* Small building blocks (kept in this file to keep the page simple)   */
 /* ------------------------------------------------------------------ */
@@ -93,7 +100,8 @@ function DataTable({
 /**
  * Figure with a placeholder.
  * - Without `src`: shows a dashed box saying what goes there.
- * - With `src` (a file in public/, e.g. "/validation.png"): shows the image.
+ * - With `src` (a file in public/): shows the image at full column width,
+ *   keeping its own proportions (no need to know width/height).
  * The alt text is how screen readers describe the picture, so always fill it.
  */
 function Figure({
@@ -101,15 +109,11 @@ function Figure({
   alt,
   placeholder,
   caption,
-  width = 1200,
-  height = 700,
 }: {
   src?: string;
   alt: string;
-  placeholder: string;
+  placeholder?: string;
   caption?: string;
-  width?: number;
-  height?: number;
 }) {
   return (
     <figure className="space-y-2">
@@ -117,8 +121,10 @@ function Figure({
         <Image
           src={src}
           alt={alt}
-          width={width}
-          height={height}
+          width={0}
+          height={0}
+          sizes="(min-width: 768px) 768px, 100vw"
+          unoptimized={src.endsWith(".svg")}
           className="h-auto w-full rounded-lg border border-foreground/15"
         />
       ) : (
@@ -219,10 +225,11 @@ export default function HowItWorks() {
             with one calibrated factor per calendar month. The result is a single
             series, in a single unit, that you can compare across all years.
           </P>
+          {/* fig9 — TODO: replace this alt with the one written for the final image */}
           <Figure
-            alt="Diagram of the 2012 sensor switch: raw MODIS and VIIRS counts show a false jump, while the harmonized series is continuous."
-            placeholder="Optional figure: raw MODIS + VIIRS (jump in 2012) vs. harmonized series"
-            caption="Optional: a before/after chart makes the problem obvious at a glance."
+            src={`${IMG}/fig9_raw_vs_harmonized.svg`}
+            alt="Chart comparing the raw yearly series, which jumps in 2012 when the sensor changes from MODIS to VIIRS, with the harmonized series, which stays continuous across 2012."
+            caption="Raw detections jump when the sensor changes in 2012; the harmonized series does not."
           />
         </Section>
 
@@ -314,12 +321,11 @@ export default function HowItWorks() {
             is larger than both pixels, so both sensors “see” a burning cell in a
             similar way.
           </P>
+          {/* fig7 */}
           <Figure
-            alt="Illustration of one hexagonal cell containing many small VIIRS pixels and a few large MODIS pixels, all counted as a single cell-day."
-            placeholder="Figure: one H3 cell with many VIIRS pixels and a few MODIS pixels = 1 cell-day"
-            caption="Optional: a simple illustration of a cell-day."
-            width={1200}
-            height={600}
+            src={`${IMG}/fig7_cell_day.png`}
+            alt="Schematic of one hexagonal H3 cell of about 5 km² with the same fire seen by two sensors. On the left, MODIS with 1 km pixels lights 2 pixels; on the right, VIIRS with 375 m pixels lights 9 pixels. In both cases the cell counts as 1 cell-day with fire."
+            caption="The same fire seen by two sensors: different pixel counts, but always 1 cell-day."
           />
 
           <H3>Step B · One conversion factor per calendar month</H3>
@@ -367,12 +373,11 @@ calibration years = 2012–2018 and 2021`}
             visible to both sensors, so VIIRS has less of an advantage. In the wet
             season fires are small and only VIIRS catches most of them.
           </P>
+          {/* fig6 — confirm the exact file name/extension */}
           <Figure
-            alt="Bar chart of the 12 monthly conversion factors, lowest from July to September."
-            placeholder="Optional chart: the 12 monthly factors (bars), highlighting Jul–Sep as lowest"
-            caption="Optional: a bar chart of the factors. Do not rely on color alone; label the bars."
-            width={1200}
-            height={500}
+            src={`${IMG}/fig6_monthly_factors.png`}
+            alt="Bar chart of the 12 monthly conversion factors from MODIS Aqua to VIIRS. January 3.52, February 4.67, March 4.19, April 4.29, May 3.93, June 3.48, July 2.69, August 2.61, September 2.90, October 3.39, November 4.10, December 4.05. July to September, the dry season, are labelled and have the lowest factors."
+            caption="Monthly conversion factors. The dry season (Jul–Sep) has the lowest values."
           />
 
           <H3>Step C · Apply and switch</H3>
@@ -402,12 +407,10 @@ H(c, d) = x(VIIRS)                      if d ≥ 2012-01-01`}
             VIIRS count of those years within 12.5%, and the series shows no jump
             at the 2012 switch.
           </P>
-          {/* TODO: export the validation chart from the PDF as public/validation.png
-              and add src="/validation.png" to the Figure below.
-              Keep the alt text: it is how screen readers describe the chart. */}
+          {/* fig5 */}
           <Figure
-            alt="Bar chart of the yearly difference, in percent, between MODIS Aqua times the monthly factor and the real VIIRS S-NPP count, from 2012 to 2025. Test years: 2019 +12.5%, 2020 −4.2%. Calibration years stay within about 11%; after the 2022 orbit drift the series uses real VIIRS."
-            placeholder="Validation chart goes here (public/validation.png)"
+            src={`${IMG}/fig5_validation.png`}
+            alt="Bar chart of the yearly difference between converted MODIS and real VIIRS fire days, 2012 to 2025. Calibration years stay between −10.9% and +8.9%. The test years, left out of calibration, are +12.5% in 2019 and −4.2% in 2020. After 2021, when the Aqua orbit drifts, differences reach +25.7% in 2023; those years are not used for calibration and the series uses real VIIRS from 2012."
             caption="Yearly difference between MODIS Aqua × monthly factor and the real VIIRS S-NPP count (0 = perfect match). Test years: 2019 +12.5%, 2020 −4.2%. 2022 onwards: Aqua orbit drift, not used. From 2012 the series uses real VIIRS, so these gaps only test the conversion."
           />
 
@@ -482,12 +485,11 @@ H(c, d) = x(VIIRS)                      if d ≥ 2012-01-01`}
               map, sends the area, and turns the answer into cards and charts.
             </li>
           </ol>
+          {/* fig8 — last sentence adjusted: PostGIS and the API are always live */}
           <Figure
-            alt="Architecture diagram: FIRMS files, Python pipeline, PostGIS database, FastAPI, Next.js web app."
-            placeholder="Optional diagram: FIRMS → Pipeline (Python) → PostGIS → API (FastAPI) → Web app (Next.js)"
-            caption="Optional: the offline part runs once; the last three blocks are the live system."
-            width={1200}
-            height={400}
+            src={`${IMG}/fig8_architecture.png`}
+            alt="Architecture diagram in five steps from left to right: NASA FIRMS archive and IBGE boundary, then an offline Python pipeline that filters, builds H3 cells and harmonizes, then a PostGIS database, then a FastAPI API with the meta, stats, density and export endpoints, then the Next.js web app with the map and dashboard. The first two steps run once; the last three are always live and answer every click."
+            caption="The offline part runs once; the last three blocks are the live system."
           />
 
           <H3>What happens when you draw an area</H3>
@@ -573,12 +575,12 @@ H(c, d) = x(VIIRS)                      if d ≥ 2012-01-01`}
             Draw an area, pick a period, read the panel. No login, nothing to
             install.
           </P>
+          {/* TODO print 1: full dashboard. Take it with the real API (USE_MOCK off).
+              Then add src={`${IMG}/print-dashboard.png`} and review the alt. */}
           <Figure
             alt="Screenshot of the brasa dashboard with an area drawn on the map and the results panel open."
             placeholder="Screenshot: full dashboard with an area drawn and the panel filled in"
             caption="Overview of the screen: map on the left, results panel on the right."
-            width={1600}
-            height={900}
           />
 
           <H3>1. Choose an area</H3>
@@ -599,11 +601,10 @@ H(c, d) = x(VIIRS)                      if d ≥ 2012-01-01`}
               <strong>Clear:</strong> removes the area and resets the panel.
             </li>
           </ul>
+          {/* TODO print 2: drawing buttons -> `${IMG}/print-draw-tools.png` */}
           <Figure
             alt="Screenshot of the drawing buttons on the map: polygon, rectangle and clear."
             placeholder="Screenshot: drawing tools (polygon, rectangle, clear)"
-            width={1200}
-            height={500}
           />
 
           <H3>2. Set the period</H3>
@@ -650,17 +651,15 @@ H(c, d) = x(VIIRS)                      if d ≥ 2012-01-01`}
               period, to see where fire concentrates.
             </li>
           </ul>
+          {/* TODO print 3: results panel -> `${IMG}/print-results-panel.png` */}
           <Figure
             alt="Screenshot of the results panel: indicator cards, anomaly sentence, year by month calendar and bars per year."
             placeholder="Screenshot: results panel (cards, anomaly, calendar, bars)"
-            width={1000}
-            height={1100}
           />
+          {/* TODO print 4: density layer -> `${IMG}/print-density.png` */}
           <Figure
             alt="Screenshot of the map with the density layer: hexagons coloured by fire days inside the drawn area, with a legend."
             placeholder="Screenshot: density layer (hexagons) with legend"
-            width={1200}
-            height={700}
           />
 
           <H3>5. Download the data</H3>
