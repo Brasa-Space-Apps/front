@@ -17,7 +17,15 @@ const STYLE_URL = process.env.NEXT_PUBLIC_MAP_STYLE ?? "https://tiles.openfreema
 const EMPTY: GeoJSON.FeatureCollection = { type: "FeatureCollection", features: [] };
 
 type Mode = "none" | "polygon" | "rectangle";
+type Corner = "top-left" | "top-right" | "bottom-left" | "bottom-right";
 type LngLat = [number, number];
+
+const CORNER_CLASS: Record<Corner, string> = {
+  "top-left": "left-3 top-14",
+  "top-right": "right-12 top-3",
+  "bottom-left": "left-3 bottom-3",
+  "bottom-right": "right-3 bottom-8",
+};
 
 interface Props {
   boundary: Meta["pantanal_boundary"] | null;
@@ -54,10 +62,23 @@ function setData(map: maplibregl.Map, id: string, data: GeoJSON.GeoJSON) {
 }
 
 export default function Map({ boundary, drawn, density, onDraw, onClear }: Props) {
+  const wrapperRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  const legendRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<maplibregl.Map | null>(null);
   const [ready, setReady] = useState(false);
   const [mode, setMode] = useState<Mode>("none");
+  const [corner, setCorner] = useState<Corner>("bottom-right");
+  const [dragPos, setDragPos] = useState<{ left: number; top: number } | null>(null);
+  const dragStateRef = useRef<{
+    pointerId: number;
+    offsetX: number;
+    offsetY: number;
+    width: number;
+    height: number;
+    wrapW: number;
+    wrapH: number;
+  } | null>(null);
 
   // refs read inside map event handlers (registered once)
   const modeRef = useRef<Mode>("none");
@@ -244,12 +265,67 @@ export default function Map({ boundary, drawn, density, onDraw, onClear }: Props
 
   const legend = maxValue > 0 ? [0, 0.25, 0.5, 0.75, 1].map((q) => (Math.sqrt(maxValue) * q) ** 2) : [];
 
+  const onLegendPointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (e.button !== 0) return;
+    const wrap = wrapperRef.current;
+    const el = legendRef.current;
+    if (!wrap || !el) return;
+
+    e.stopPropagation();
+    el.setPointerCapture(e.pointerId);
+
+    const wrapRect = wrap.getBoundingClientRect();
+    const elRect = el.getBoundingClientRect();
+    dragStateRef.current = {
+      pointerId: e.pointerId,
+      offsetX: e.clientX - elRect.left,
+      offsetY: e.clientY - elRect.top,
+      width: elRect.width,
+      height: elRect.height,
+      wrapW: wrapRect.width,
+      wrapH: wrapRect.height,
+    };
+    setDragPos({
+      left: elRect.left - wrapRect.left,
+      top: elRect.top - wrapRect.top,
+    });
+  };
+
+  const onLegendPointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
+    const ds = dragStateRef.current;
+    const wrap = wrapperRef.current;
+    if (!ds || ds.pointerId !== e.pointerId || !wrap) return;
+
+    const wrapRect = wrap.getBoundingClientRect();
+    const pad = 8;
+    const maxLeft = Math.max(pad, ds.wrapW - ds.width - pad);
+    const maxTop = Math.max(pad, ds.wrapH - ds.height - pad);
+    const left = Math.min(maxLeft, Math.max(pad, e.clientX - wrapRect.left - ds.offsetX));
+    const top = Math.min(maxTop, Math.max(pad, e.clientY - wrapRect.top - ds.offsetY));
+    setDragPos({ left, top });
+  };
+
+  const onLegendPointerEnd = (e: React.PointerEvent<HTMLDivElement>) => {
+    const ds = dragStateRef.current;
+    if (!ds || ds.pointerId !== e.pointerId) return;
+    dragStateRef.current = null;
+
+    if (dragPos) {
+      const cx = dragPos.left + ds.width / 2;
+      const cy = dragPos.top + ds.height / 2;
+      const isRight = cx >= ds.wrapW / 2;
+      const isBottom = cy >= ds.wrapH / 2;
+      setCorner(`${isBottom ? "bottom" : "top"}-${isRight ? "right" : "left"}`);
+    }
+    setDragPos(null);
+  };
+
   const toolButton = (m: Mode, label: string) => (
     <button
       type="button"
       onClick={() => setMode(mode === m ? "none" : m)}
       aria-pressed={mode === m}
-      className={`rounded-md px-3 py-2 text-sm font-medium shadow-sm transition ${
+      className={`cursor-pointer rounded-md px-3 py-2 text-sm font-medium shadow-sm transition-all duration-150 active:scale-[0.98] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#D4501C] ${
         mode === m ? "bg-[#D4501C] text-white" : "bg-white text-[#1C1A17] hover:bg-stone-100"
       }`}
     >
@@ -258,7 +334,7 @@ export default function Map({ boundary, drawn, density, onDraw, onClear }: Props
   );
 
   return (
-    <div className="relative h-full w-full">
+    <div ref={wrapperRef} className="relative h-full w-full">
       <div ref={containerRef} className="h-full w-full" />
 
       {/* drawing tools */}
@@ -269,7 +345,7 @@ export default function Map({ boundary, drawn, density, onDraw, onClear }: Props
           <button
             type="button"
             onClick={() => { setMode("none"); onDraw(boundary.geometry); }}
-            className="rounded-md bg-white px-3 py-2 text-sm font-medium text-[#1C1A17] shadow-sm hover:bg-stone-100"
+            className="cursor-pointer rounded-md bg-white px-3 py-2 text-sm font-medium text-[#1C1A17] shadow-sm transition-all duration-150 hover:bg-stone-100 active:scale-[0.98] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#D4501C]"
           >
             Whole Pantanal
           </button>
@@ -278,7 +354,7 @@ export default function Map({ boundary, drawn, density, onDraw, onClear }: Props
           <button
             type="button"
             onClick={() => { setMode("none"); onClear(); }}
-            className="rounded-md bg-white px-3 py-2 text-sm font-medium text-[#1C1A17] shadow-sm hover:bg-stone-100"
+            className="animate-fade-in cursor-pointer rounded-md bg-white px-3 py-2 text-sm font-medium text-[#1C1A17] shadow-sm transition-all duration-150 hover:bg-stone-100 active:scale-[0.98] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#D4501C]"
           >
             Clear
           </button>
@@ -287,17 +363,33 @@ export default function Map({ boundary, drawn, density, onDraw, onClear }: Props
 
       {/* hint while drawing */}
       {mode !== "none" && (
-        <p className="absolute bottom-3 left-3 rounded-md bg-[#1C1A17]/85 px-3 py-2 text-sm text-white">
+        <p className="animate-fade-in absolute bottom-3 left-3 rounded-md bg-[#1C1A17]/85 px-3 py-2 text-sm text-white backdrop-blur-[2px]">
           {mode === "polygon"
             ? "Click to add points. Double-click or click the first point to finish. Esc cancels."
             : "Click one corner, then the opposite corner. Esc cancels."}
         </p>
       )}
 
-      {/* density legend */}
+      {/* density legend (draggable, snaps to nearest corner) */}
       {legend.length > 0 && mode === "none" && (
-        <div className="absolute bottom-8 right-3 rounded-md bg-white/95 p-2 text-xs text-[#1C1A17] shadow-sm">
-          <p className="mb-1 font-medium">Fire days per hexagon</p>
+        <div
+          ref={legendRef}
+          onPointerDown={onLegendPointerDown}
+          onPointerMove={onLegendPointerMove}
+          onPointerUp={onLegendPointerEnd}
+          onPointerCancel={onLegendPointerEnd}
+          title="Drag to move to another corner"
+          style={dragPos ? { left: dragPos.left, top: dragPos.top } : undefined}
+          className={`absolute select-none touch-none rounded-md bg-white/95 p-2 text-xs text-[#1C1A17] backdrop-blur-[2px] ${
+            dragPos
+              ? "z-20 scale-[1.02] cursor-grabbing shadow-md"
+              : `${CORNER_CLASS[corner]} animate-fade-in cursor-grab shadow-sm transition-shadow hover:shadow`
+          }`}
+        >
+          <p className="mb-1 flex items-center justify-between gap-2 font-medium">
+            <span>Fire days per hexagon</span>
+            <span aria-hidden className="text-[10px] leading-none tracking-tighter text-stone-400">⋮⋮</span>
+          </p>
           <div className="flex items-center gap-1">
             {VIRIDIS.map((c, i) => (
               <div key={c} className="flex flex-col items-center">
