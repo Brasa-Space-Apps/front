@@ -5,6 +5,7 @@
   --green: #4E6B2C;
   --foreground: #1C1A17;
   --background: #F6F5F2;
+  color-scheme: light;
 }
 
 @theme inline {
@@ -15,13 +16,6 @@
   --font-sans: var(--font-outfit);
   --font-text: var(--font-inter);
   --font-mono: var(--font-plex-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
 }
 
 body {
