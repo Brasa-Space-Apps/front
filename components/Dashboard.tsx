@@ -120,7 +120,16 @@ export default function Dashboard() {
           </div>
         )}
 
-        {a.status === "loading" && <Skeleton />}
+        {a.status === "loading" && (
+          <>
+            {a.slow && (
+              <p role="status" className="text-sm text-stone-600">
+                Waking up the server. The first request can take up to a minute…
+              </p>
+            )}
+            <Skeleton />
+          </>
+        )}
 
         {(a.status === "outside" || a.status === "error") && (
           <div role="alert" className="animate-fade-in-up rounded-lg border border-[#D4501C]/40 bg-[#FBF1EC] p-4 text-sm text-[#1C1A17]">
@@ -128,7 +137,21 @@ export default function Dashboard() {
               {a.status === "outside" ? "This area can't be analysed" : "Something went wrong"}
             </p>
             <p className="mt-1">{a.error}</p>
-            {a.status === "outside" && <p className="mt-1">Draw inside the green outline of the Brazilian Pantanal.</p>}
+            <button
+              onClick={a.retry}
+              className="mt-3 rounded-md bg-[#D4501C] px-3 py-1.5 font-medium text-white hover:bg-[#B4441B]"
+            >
+              Try again
+            </button>
+          </div>
+        )}
+
+        {a.status === "no_fire" && (
+          <div role="status" className="rounded-lg border border-stone-200 bg-white p-4 text-sm text-[#1C1A17]">
+            <p className="font-medium">No fire recorded</p>
+            <p className="mt-1">
+              No fire was detected in this area during the selected period. Try a longer period or a larger area.
+            </p>
           </div>
         )}
 
