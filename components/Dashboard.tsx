@@ -48,9 +48,16 @@ export default function Dashboard() {
 
       <aside aria-label="Analysis panel" className="space-y-4 p-4 lg:w-2/5 lg:overflow-y-auto">
         {a.metaError && (
-          <p role="alert" className="text-sm text-[#B4441B]">
-            Could not reach the API ({a.metaError}). It may be waking up: try again in a minute.
-          </p>
+          <div role="alert" className="rounded-lg border border-[#D4501C]/40 bg-[#FBF1EC] p-4 text-sm text-[#1C1A17]">
+            <p className="font-medium">Could not reach the API</p>
+            <p className="mt-1">{a.metaError}. It may be waking up: try again in a minute.</p>
+            <button
+              onClick={() => location.reload()}
+              className="mt-3 rounded-md bg-[#1C1A17] px-3 py-1.5 font-medium text-white hover:bg-black"
+            >
+              Reload
+            </button>
+          </div>
         )}
 
         {a.meta && (
@@ -64,24 +71,57 @@ export default function Dashboard() {
         )}
 
         {a.status === "idle" && (
-          <div className="rounded-lg border border-dashed border-stone-300 p-4 text-sm text-stone-700">
-            <p className="font-medium text-[#1C1A17]">Draw an area to see its fire history</p>
-            <p className="mt-1">
-              Use <b>Polygon</b> or <b>Rectangle</b> on the map, inside the green outline of the Brazilian Pantanal,
-              or click <b>Whole Pantanal</b>.
-            </p>
+          <div className="space-y-3 text-sm text-stone-600">
+            <p>Draw an area on the map (polygon or rectangle) to see its fire history.</p>
+            {a.meta && (
+              <button
+                onClick={() => a.setGeometry(a.meta!.pantanal_boundary.geometry)}
+                className="rounded-md border border-stone-300 px-3 py-1.5 font-medium hover:bg-stone-100"
+              >
+                See the whole Pantanal
+              </button>
+            )}
           </div>
         )}
 
-        {a.status === "loading" && <Skeleton />}
+        {a.status === "loading" && (
+          <>
+            {a.slow && (
+              <p role="status" className="text-sm text-stone-600">
+                Waking up the server. The first request can take up to a minute…
+              </p>
+            )}
+            <Skeleton />
+          </>
+        )}
 
-        {(a.status === "outside" || a.status === "error") && (
+        {a.status === "outside" && (
           <div role="alert" className="rounded-lg border border-[#D4501C]/40 bg-[#FBF1EC] p-4 text-sm text-[#1C1A17]">
-            <p className="font-medium">
-              {a.status === "outside" ? "This area can't be analysed" : "Something went wrong"}
-            </p>
+            <p className="font-medium">This area can&apos;t be analysed</p>
             <p className="mt-1">{a.error}</p>
-            {a.status === "outside" && <p className="mt-1">Draw inside the green outline of the Brazilian Pantanal.</p>}
+            <p className="mt-1">Draw inside the green outline of the Brazilian Pantanal.</p>
+          </div>
+        )}
+
+        {a.status === "error" && (
+          <div role="alert" className="rounded-lg border border-[#D4501C]/40 bg-[#FBF1EC] p-4 text-sm text-[#1C1A17]">
+            <p className="font-medium">Something went wrong</p>
+            <p className="mt-1">{a.error}</p>
+            <button
+              onClick={a.retry}
+              className="mt-3 rounded-md bg-[#D4501C] px-3 py-1.5 font-medium text-white hover:bg-[#B4441B]"
+            >
+              Try again
+            </button>
+          </div>
+        )}
+
+        {a.status === "no_fire" && (
+          <div role="status" className="rounded-lg border border-stone-200 bg-white p-4 text-sm text-[#1C1A17]">
+            <p className="font-medium">No fire recorded</p>
+            <p className="mt-1">
+              No fire was detected in this area during the selected period. Try a longer period or a larger area.
+            </p>
           </div>
         )}
 

@@ -9,6 +9,7 @@ import type { AreaQuery, Density, Geometry, Meta, Stats } from "@/lib/types";
 export type Status = "idle" | "loading" | "result" | "no_fire" | "outside" | "error";
 
 const DEBOUNCE_MS = 300;
+const SLOW_MS = 8000; // after this, tell the user the server may be waking up
 
 /**
  * Holds the whole analysis state: /meta, the drawn area, the period,
@@ -28,6 +29,9 @@ export function useAnalysis() {
   const [density, setDensity] = useState<Density | null>(null);
   const [error, setError] = useState<string | null>(null);
 
+  const [attempt, setAttempt] = useState(0); // bumped by retry()
+  const [slow, setSlow] = useState(false);   // request is taking long
+
   const controller = useRef<AbortController | null>(null);
 
   // 1. /meta once, when the page opens
@@ -41,9 +45,11 @@ export function useAnalysis() {
       .catch((e: Error) => setMetaError(e.message));
   }, []);
 
-  // 2. /stats + /density whenever the area or the period changes
+  // 2. /stats + /density whenever the area, the period or a retry changes
   useEffect(() => {
     if (!geometry || !startDate || !endDate || startDate > endDate) return;
+
+    let slowTimer: ReturnType<typeof setTimeout> | undefined;
 
     const timer = setTimeout(async () => {
       controller.current?.abort();
@@ -53,6 +59,9 @@ export function useAnalysis() {
       const query: AreaQuery = { geometry, start_date: startDate, end_date: endDate };
       setStatus("loading");
       setError(null);
+      setSlow(false);
+      slowTimer = setTimeout(() => setSlow(true), SLOW_MS);
+
       try {
         const [s, d] = await Promise.all([
           postStats(query, ctrl.signal),
@@ -68,11 +77,19 @@ export function useAnalysis() {
         setDensity(null);
         setError((e as Error).message);
         setStatus(e instanceof ApiError && e.status === 400 ? "outside" : "error");
+      } finally {
+        clearTimeout(slowTimer);
+        if (!ctrl.signal.aborted) setSlow(false);
       }
     }, DEBOUNCE_MS);
 
-    return () => clearTimeout(timer);
-  }, [geometry, startDate, endDate]);
+    return () => {
+      clearTimeout(timer);
+      clearTimeout(slowTimer);
+    };
+  }, [geometry, startDate, endDate, attempt]);
+
+  const retry = useCallback(() => setAttempt((n) => n + 1), []);
 
   const clear = useCallback(() => {
     controller.current?.abort();
@@ -80,6 +97,7 @@ export function useAnalysis() {
     setStats(null);
     setDensity(null);
     setError(null);
+    setSlow(false);
     setStatus("idle");
   }, []);
 
@@ -91,6 +109,7 @@ export function useAnalysis() {
     geometry, setGeometry,
     startDate, setStartDate, endDate, setEndDate,
     status, stats, density, error,
+    slow, retry,
     query, clear,
   };
 }
