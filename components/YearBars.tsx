@@ -32,9 +32,9 @@ export default function YearBars({ calendar, worstYear }: { calendar: MonthValue
 
   return (
     <figure>
-      <figcaption className="mb-2 text-sm font-semibold text-[#1C1A17]">Fire days per year</figcaption>
+      <figcaption className="mb-2 text-sm font-semibold text-[#1C1A17]">Fire activity per year</figcaption>
       <ReactECharts option={option} style={{ height: 220 }} notMerge
-                    opts={{ renderer: "svg" }} aria-label="Bar chart of fire days per year" />
+                    opts={{ renderer: "svg" }} aria-label="Sum of days with fire across all ~5 km² cells in the area" />
     </figure>
   );
 }
