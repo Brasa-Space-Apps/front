@@ -3,10 +3,15 @@
 
 import { useEffect, useState } from "react";
 
-import { MONTHS_LONG, fmt, fmt0, monthLabel } from "@/lib/format";
-import type { Stats } from "@/lib/types";
+import { fmt, fmt0, monthLabel } from "@/lib/format";
+import { getCopy } from "@/lib/i18n";
+import type { Locale, Stats } from "@/lib/types";
 
-function AnimatedInt({ target, suffix = "" }: { target: number; suffix?: string }) {
+function monthName(month: number, locale: Locale) {
+  return new Date(Date.UTC(2000, month - 1, 1)).toLocaleString(locale, { month: "long", timeZone: "UTC" });
+}
+
+function AnimatedInt({ target, locale, suffix = "" }: { target: number; locale: Locale; suffix?: string }) {
   const [val, setVal] = useState(0);
 
   useEffect(() => {
@@ -23,7 +28,7 @@ function AnimatedInt({ target, suffix = "" }: { target: number; suffix?: string 
     return () => cancelAnimationFrame(raf);
   }, [target]);
 
-  return <>{fmt0(val)}{suffix}</>;
+  return <>{fmt0(val, locale)}{suffix}</>;
 }
 
 function Card({
@@ -39,43 +44,44 @@ function Card({
 }) {
   return (
     <div
-      className="animate-fade-in-up rounded-lg border border-stone-200 bg-white p-3 transition-all duration-200 hover:-translate-y-0.5 hover:border-stone-300 hover:shadow-sm"
+      className="animate-fade-in-up border-l border-line p-3 first:border-l-0"
       style={{ animationDelay: `${delay}ms` }}
     >
-      <p className="text-xs text-stone-600">{label}</p>
-      <p className="mt-1 text-2xl font-semibold tabular-nums text-[#1C1A17]">{value}</p>
-      {detail && <p className="mt-0.5 text-xs text-stone-600">{detail}</p>}
+      <p className="text-[0.68rem] uppercase tracking-[0.1em] text-muted">{label}</p>
+      <p className="mt-1 text-2xl font-semibold tabular-nums text-fg">{value}</p>
+      {detail && <p className="mt-0.5 text-xs text-muted">{detail}</p>}
     </div>
   );
 }
 
-export default function IndicatorCards({ stats }: { stats: Stats }) {
+export default function IndicatorCards({ stats, locale }: { stats: Stats; locale: Locale }) {
+  const t = getCopy(locale);
   const { indicators: ind, area } = stats;
   return (
-    <div className="grid grid-cols-2 gap-3">
+    <div className="grid grid-cols-2 divide-y divide-line border-y border-line sm:grid-cols-4 sm:divide-y-0">
       <Card
         delay={0}
-        label="Fire days in the period"
-        value={<AnimatedInt target={ind.total} />}
-        detail={`${fmt(ind.annual_mean)} per year on average`}
+        label={t.fireDaysInPeriod}
+        value={<AnimatedInt target={ind.total} locale={locale} />}
+        detail={`${fmt(ind.annual_mean, locale)} ${t.perYear}`}
       />
       <Card
         delay={50}
-        label="Worst year"
+        label={t.worstYear}
         value={ind.worst_year ? String(ind.worst_year.year) : "—"}
-        detail={ind.worst_year ? `${fmt0(ind.worst_year.value)} fire days` : "no fire in the period"}
+        detail={ind.worst_year ? `${fmt0(ind.worst_year.value, locale)} ${t.fireDaysMetric}` : t.noFirePeriod}
       />
       <Card
         delay={100}
-        label="Peak month"
-        value={ind.peak_month ? monthLabel(ind.peak_month.year, ind.peak_month.month) : "—"}
-        detail={ind.typical_peak_month ? `Fire season usually peaks in ${MONTHS_LONG[ind.typical_peak_month - 1]}` : undefined}
+        label={t.peakMonth}
+        value={ind.peak_month ? monthLabel(ind.peak_month.year, ind.peak_month.month, locale) : "—"}
+        detail={ind.typical_peak_month ? `${t.typicalPeak} ${monthName(ind.typical_peak_month, locale)}` : undefined}
       />
       <Card
         delay={150}
-        label="Area"
-        value={<AnimatedInt target={area.km2} suffix=" km²" />}
-        detail={`${fmt0(area.n_cells)} hexagons of ~5 km²`}
+        label={t.area}
+        value={<AnimatedInt target={area.km2} locale={locale} suffix=" km²" />}
+        detail={`${fmt0(area.n_cells, locale)} ${t.cells}`}
       />
     </div>
   );
