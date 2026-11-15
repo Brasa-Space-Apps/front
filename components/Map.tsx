@@ -182,6 +182,10 @@ export default function Map({ boundary, drawn, density, onDraw, onClear, locale 
   // ------------------------------------------------------------- create the map once
   useEffect(() => {
     if (!containerRef.current) return;
+    readyRef.current = false;
+    styleLoadingRef.current = false;
+    fittedRef.current = false;
+    lastBoundaryRef.current = null;
     const initialBoundary = initialBoundaryRef.current;
     const initialBounds = safeBbox(initialBoundary.geometry);
     const map = new maplibregl.Map({
@@ -203,12 +207,16 @@ export default function Map({ boundary, drawn, density, onDraw, onClear, locale 
     const resizeObserver = new ResizeObserver(() => map.resize());
     resizeObserver.observe(containerRef.current);
 
-    map.on("load", () => {
+    const onInitialReady = () => {
+      if (readyRef.current) return;
       addOverlayLayers(map);
       styleLoadingRef.current = false;
       readyRef.current = true;
       setReady(true);
-    });
+      setStyleVersion((v) => v + 1);
+    };
+    map.once("style.load", onInitialReady);
+    map.once("load", onInitialReady);
 
     const finish = (geometry: Geometry) => {
       setData(map, "draft", EMPTY);
@@ -308,6 +316,7 @@ export default function Map({ boundary, drawn, density, onDraw, onClear, locale 
       map.remove();
       mapRef.current = null;
       readyRef.current = false;
+      setReady(false);
       redrawDraftRef.current = () => {};
     };
   }, []);
@@ -337,7 +346,7 @@ export default function Map({ boundary, drawn, density, onDraw, onClear, locale 
     modeRef.current = mode;
     pointsRef.current = [];
     const map = mapRef.current;
-    if (!map || !ready || styleLoadingRef.current) return;
+    if (!map || !ready || !readyRef.current || styleLoadingRef.current) return;
     setData(map, "draft", EMPTY);
     map.getCanvas().style.cursor = mode === "none" ? "" : "crosshair";
     if (mode === "none") map.doubleClickZoom.enable();
@@ -347,7 +356,7 @@ export default function Map({ boundary, drawn, density, onDraw, onClear, locale 
   // ------------------------------------------------------------- Pantanal boundary
   useEffect(() => {
     const map = mapRef.current;
-    if (!map || !ready || styleLoadingRef.current || !boundary) return;
+    if (!map || !ready || !readyRef.current || styleLoadingRef.current || !boundary) return;
     setData(map, "boundary", boundary);
     const boundaryChanged = lastBoundaryRef.current !== null && lastBoundaryRef.current !== boundary;
     if ((boundaryChanged || !fittedRef.current) && !userInteractedRef.current) {
@@ -364,7 +373,7 @@ export default function Map({ boundary, drawn, density, onDraw, onClear, locale 
   // ------------------------------------------------------------- drawn area
   useEffect(() => {
     const map = mapRef.current;
-    if (!map || !ready || styleLoadingRef.current) return;
+    if (!map || !ready || !readyRef.current || styleLoadingRef.current) return;
     setData(map, "drawn", drawn ? { type: "Feature", properties: {}, geometry: drawn } : EMPTY);
   }, [drawn, ready, styleVersion]);
 
@@ -373,7 +382,7 @@ export default function Map({ boundary, drawn, density, onDraw, onClear, locale 
 
   useEffect(() => {
     const map = mapRef.current;
-    if (!map || !ready || styleLoadingRef.current) return;
+    if (!map || !ready || !readyRef.current || styleLoadingRef.current) return;
     setData(map, "density", density ?? EMPTY);
     if (maxValue > 0) {
       // sqrt scale: a few very hot hexagons should not wash out the rest

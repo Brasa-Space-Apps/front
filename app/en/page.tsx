@@ -3,7 +3,7 @@ import { LocalizedHome } from "@/app/page";
 
 export const metadata: Metadata = {
   title: "brasa · Brazilian Pantanal",
-  description: "Fire-day history in the Brazilian Pantanal.",
+  description: "Fire occurrence history in the Brazilian Pantanal.",
   alternates: {
     canonical: "/",
     languages: {
