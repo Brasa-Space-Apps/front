@@ -2,6 +2,7 @@
 "use client";
 
 import dynamic from "next/dynamic";
+import { useState } from "react";
 
 import AnomalyPanel from "@/components/AnomalyPanel";
 import ExportButton from "@/components/ExportButton";
@@ -21,7 +22,10 @@ const YearBars = dynamic(() => import("@/components/YearBars"), { ssr: false });
 
 function Skeleton() {
   return (
-    <div className="space-y-3" aria-busy="true" aria-label="Loading">
+    <div className="animate-fade-in space-y-4" aria-busy="true" aria-label="Loading analysis">
+      <p role="status" className="text-xs text-stone-600">
+        Analysing selected area…
+      </p>
       <div className="grid grid-cols-2 gap-3">
         {[0, 1, 2, 3].map((i) => <div key={i} className="h-20 animate-pulse rounded-lg bg-stone-200" />)}
       </div>
@@ -31,33 +35,67 @@ function Skeleton() {
   );
 }
 
+function monthBounds(year: number, month: number, min?: string, max?: string) {
+  const mm = String(month).padStart(2, "0");
+  const lastDay = new Date(Date.UTC(year, month, 0)).getUTCDate();
+  let start = `${year}-${mm}-01`;
+  let end = `${year}-${mm}-${String(lastDay).padStart(2, "0")}`;
+  if (min && start < min) start = min;
+  if (max && end > max) end = max;
+  return { start, end };
+}
+
 export default function Dashboard() {
   const a = useAnalysis();
+  const [monthFilter, setMonthFilter] = useState<{
+    year: number;
+    month: number;
+    prevStart: string;
+    prevEnd: string;
+  } | null>(null);
+
+  const handleSelectMonth = (year: number, month: number) => {
+    if (monthFilter && monthFilter.year === year && monthFilter.month === month) {
+      a.setStartDate(monthFilter.prevStart);
+      a.setEndDate(monthFilter.prevEnd);
+      setMonthFilter(null);
+      return;
+    }
+    const prevStart = monthFilter ? monthFilter.prevStart : a.startDate;
+    const prevEnd = monthFilter ? monthFilter.prevEnd : a.endDate;
+    const { start, end } = monthBounds(year, month, a.meta?.period.start, a.meta?.period.end);
+    setMonthFilter({ year, month, prevStart, prevEnd });
+    a.setStartDate(start);
+    a.setEndDate(end);
+  };
+
+  const handleClearMonth = () => {
+    if (!monthFilter) return;
+    a.setStartDate(monthFilter.prevStart);
+    a.setEndDate(monthFilter.prevEnd);
+    setMonthFilter(null);
+  };
 
   return (
-    <main className="flex flex-1 flex-col lg:min-h-0 lg:flex-row">
-      <section aria-label="Map of the Brazilian Pantanal" className="h-[50vh] bg-stone-100 lg:h-auto lg:w-3/5">
+    <main className="flex flex-1 flex-col lg:min-h-0 lg:flex-row lg:overflow-hidden">
+      <section
+        aria-label="Map of the Brazilian Pantanal"
+        className="h-[50vh] overflow-hidden bg-stone-100 lg:h-full lg:w-3/5"
+      >
         <Map
           boundary={a.meta?.pantanal_boundary ?? null}
           drawn={a.geometry}
           density={a.density}
           onDraw={a.setGeometry}
-          onClear={a.clear}
+          onClear={() => { setMonthFilter(null); a.clear(); }}
         />
       </section>
 
-      <aside aria-label="Analysis panel" className="space-y-4 p-4 lg:w-2/5 lg:overflow-y-auto">
+      <aside aria-label="Analysis panel" className="panel-scroll space-y-4 p-4 lg:h-full lg:w-2/5 lg:overflow-y-auto">
         {a.metaError && (
-          <div role="alert" className="rounded-lg border border-[#D4501C]/40 bg-[#FBF1EC] p-4 text-sm text-[#1C1A17]">
-            <p className="font-medium">Could not reach the API</p>
-            <p className="mt-1">{a.metaError}. It may be waking up: try again in a minute.</p>
-            <button
-              onClick={() => location.reload()}
-              className="mt-3 rounded-md bg-[#1C1A17] px-3 py-1.5 font-medium text-white hover:bg-black"
-            >
-              Reload
-            </button>
-          </div>
+          <p role="alert" className="animate-fade-in text-sm text-[#B4441B]">
+            Could not reach the API ({a.metaError}). It may be waking up: try again in a minute.
+          </p>
         )}
 
         {a.meta && (
@@ -66,21 +104,19 @@ export default function Dashboard() {
             max={a.meta.period.end}
             start={a.startDate}
             end={a.endDate}
-            onChange={(s, e) => { a.setStartDate(s); a.setEndDate(e); }}
+            onChange={(s, e) => { setMonthFilter(null); a.setStartDate(s); a.setEndDate(e); }}
           />
         )}
 
         {a.status === "idle" && (
-          <div className="space-y-3 text-sm text-stone-600">
-            <p>Draw an area on the map (polygon or rectangle) to see its fire history.</p>
-            {a.meta && (
-              <button
-                onClick={() => a.setGeometry(a.meta!.pantanal_boundary.geometry)}
-                className="rounded-md border border-stone-300 px-3 py-1.5 font-medium hover:bg-stone-100"
-              >
-                See the whole Pantanal
-              </button>
-            )}
+          <div className="animate-fade-in rounded-lg border border-dashed border-stone-300 bg-white/50 p-4 text-sm text-stone-700">
+            <p className="font-medium text-[#1C1A17]">Draw an area to see its fire history</p>
+            <p className="mt-1.5 leading-relaxed">
+              Use <span className="rounded bg-stone-200/80 px-1.5 py-0.5 text-xs font-medium text-[#1C1A17]">Polygon</span> or{" "}
+              <span className="rounded bg-stone-200/80 px-1.5 py-0.5 text-xs font-medium text-[#1C1A17]">Rectangle</span> on the map,
+              inside the green outline of the Brazilian Pantanal, or click{" "}
+              <span className="rounded bg-stone-200/80 px-1.5 py-0.5 text-xs font-medium text-[#1C1A17]">Whole Pantanal</span>.
+            </p>
           </div>
         )}
 
@@ -95,17 +131,11 @@ export default function Dashboard() {
           </>
         )}
 
-        {a.status === "outside" && (
-          <div role="alert" className="rounded-lg border border-[#D4501C]/40 bg-[#FBF1EC] p-4 text-sm text-[#1C1A17]">
-            <p className="font-medium">This area can&apos;t be analysed</p>
-            <p className="mt-1">{a.error}</p>
-            <p className="mt-1">Draw inside the green outline of the Brazilian Pantanal.</p>
-          </div>
-        )}
-
-        {a.status === "error" && (
-          <div role="alert" className="rounded-lg border border-[#D4501C]/40 bg-[#FBF1EC] p-4 text-sm text-[#1C1A17]">
-            <p className="font-medium">Something went wrong</p>
+        {(a.status === "outside" || a.status === "error") && (
+          <div role="alert" className="animate-fade-in-up rounded-lg border border-[#D4501C]/40 bg-[#FBF1EC] p-4 text-sm text-[#1C1A17]">
+            <p className="font-medium">
+              {a.status === "outside" ? "This area can't be analysed" : "Something went wrong"}
+            </p>
             <p className="mt-1">{a.error}</p>
             <button
               onClick={a.retry}
@@ -126,14 +156,25 @@ export default function Dashboard() {
         )}
 
         {(a.status === "result" || a.status === "no_fire") && a.stats && a.query && (
-          <>
+          <div className="animate-fade-in-up space-y-4">
+            {a.status === "no_fire" && (
+              <p role="status" className="rounded-lg border border-stone-200 bg-white p-3 text-sm text-stone-700">
+                No fire activity was recorded in this area during the selected period.
+              </p>
+            )}
             <Warnings items={a.stats.warnings} />
             <IndicatorCards stats={a.stats} />
             <AnomalyPanel lastMonth={a.stats.last_month} anomalies={a.stats.anomalies} />
-            <CalendarHeatmap calendar={a.stats.calendar} lastMonth={a.stats.last_month} />
+            <CalendarHeatmap
+              calendar={a.stats.calendar}
+              lastMonth={a.stats.last_month}
+              activeMonth={monthFilter ? { year: monthFilter.year, month: monthFilter.month } : null}
+              onSelectMonth={handleSelectMonth}
+              onClearMonth={handleClearMonth}
+            />
             <YearBars calendar={a.stats.calendar} worstYear={a.stats.indicators.worst_year?.year ?? null} />
             <ExportButton query={a.query} />
-          </>
+          </div>
         )}
 
         {a.meta && (
