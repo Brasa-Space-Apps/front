@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import Header from "@/components/Header";
-import Footer from "@/components/Footer";
 import Image from "next/image";
 
 export const metadata: Metadata = {
@@ -16,9 +15,6 @@ export const metadata: Metadata = {
  */
 const IMG = "/how-it-works";
 
-/* ------------------------------------------------------------------ */
-/* Small building blocks (kept in this file to keep the page simple)   */
-/* ------------------------------------------------------------------ */
 
 function Section({
   id,
@@ -143,9 +139,6 @@ function Figure({
   );
 }
 
-/* ------------------------------------------------------------------ */
-/* Content                                                              */
-/* ------------------------------------------------------------------ */
 
 const FACTORS: [string, string][] = [
   ["Jan", "3.52"],
@@ -175,10 +168,8 @@ const TOC = [
 export default function HowItWorks() {
   return (
     <div className="flex flex-1 flex-col">
-      <Header />
-
+      <Header locale="en" />
       <main className="mx-auto w-full max-w-3xl flex-1 space-y-10 p-4 py-8">
-        {/* ---------- Intro ---------- */}
         <div>
           <Link href="/" className="text-sm font-medium underline">
             ← Back to the map
@@ -206,7 +197,6 @@ export default function HowItWorks() {
           </nav>
         </div>
 
-        {/* ---------- Why harmonize ---------- */}
         <Section id="why-harmonize" title="Why we harmonize the data">
           <P>
             NASA FIRMS publishes active-fire detections from two instrument
@@ -233,7 +223,6 @@ export default function HowItWorks() {
           />
         </Section>
 
-        {/* ---------- Data ---------- */}
         <Section id="data" title="The data">
           <P>
             We use one reference satellite per sensor, so the series never
@@ -296,7 +285,6 @@ export default function HowItWorks() {
           </ul>
         </Section>
 
-        {/* ---------- C1-day factor ---------- */}
         <Section id="c1-day-factor" title="The C1-day factor">
           <P>
             Three steps turn raw detections into one series: a common grid, a
@@ -321,7 +309,6 @@ export default function HowItWorks() {
             is larger than both pixels, so both sensors “see” a burning cell in a
             similar way.
           </P>
-          {/* fig7 */}
           <Figure
             src={`${IMG}/fig7_cell_day.png`}
             alt="Schematic of one hexagonal H3 cell of about 5 km² with the same fire seen by two sensors. On the left, MODIS with 1 km pixels lights 2 pixels; on the right, VIIRS with 375 m pixels lights 9 pixels. In both cases the cell counts as 1 cell-day with fire."
@@ -373,7 +360,6 @@ calibration years = 2012–2018 and 2021`}
             visible to both sensors, so VIIRS has less of an advantage. In the wet
             season fires are small and only VIIRS catches most of them.
           </P>
-          {/* fig6 — confirm the exact file name/extension */}
           <Figure
             src={`${IMG}/fig6_monthly_factors.png`}
             alt="Bar chart of the 12 monthly conversion factors from MODIS Aqua to VIIRS. January 3.52, February 4.67, March 4.19, April 4.29, May 3.93, June 3.48, July 2.69, August 2.61, September 2.90, October 3.39, November 4.10, December 4.05. July to September, the dry season, are labelled and have the lowest factors."
@@ -400,14 +386,12 @@ H(c, d) = x(VIIRS)                      if d ≥ 2012-01-01`}
           </P>
         </Section>
 
-        {/* ---------- Validation ---------- */}
         <Section id="validation" title="Validation chart">
           <P>
             Calibrated without 2019 and 2020, the conversion predicts the real
             VIIRS count of those years within 12.5%, and the series shows no jump
             at the 2012 switch.
           </P>
-          {/* fig5 */}
           <Figure
             src={`${IMG}/fig5_validation.png`}
             alt="Bar chart of the yearly difference between converted MODIS and real VIIRS fire days, 2012 to 2025. Calibration years stay between −10.9% and +8.9%. The test years, left out of calibration, are +12.5% in 2019 and −4.2% in 2020. After 2021, when the Aqua orbit drifts, differences reach +25.7% in 2023; those years are not used for calibration and the series uses real VIIRS from 2012."
@@ -454,7 +438,6 @@ H(c, d) = x(VIIRS)                      if d ≥ 2012-01-01`}
           </P>
         </Section>
 
-        {/* ---------- From data to dashboard ---------- */}
         <Section id="from-data-to-dashboard" title="From data to dashboard">
           <P>
             The heavy work happens once, offline; each click on the map only sums
@@ -485,7 +468,6 @@ H(c, d) = x(VIIRS)                      if d ≥ 2012-01-01`}
               map, sends the area, and turns the answer into cards and charts.
             </li>
           </ol>
-          {/* fig8 — last sentence adjusted: PostGIS and the API are always live */}
           <Figure
             src={`${IMG}/fig8_architecture.png`}
             alt="Architecture diagram in five steps from left to right: NASA FIRMS archive and IBGE boundary, then an offline Python pipeline that filters, builds H3 cells and harmonizes, then a PostGIS database, then a FastAPI API with the meta, stats, density and export endpoints, then the Next.js web app with the map and dashboard. The first two steps run once; the last three are always live and answer every click."
@@ -569,17 +551,14 @@ H(c, d) = x(VIIRS)                      if d ≥ 2012-01-01`}
           </P>
         </Section>
 
-        {/* ---------- How to use ---------- */}
         <Section id="how-to-use" title="How to use brasa">
           <P>
             Draw an area, pick a period, read the panel. No login, nothing to
             install.
           </P>
-          {/* TODO print 1: full dashboard. Take it with the real API (USE_MOCK off).
-              Then add src={`${IMG}/print-dashboard.png`} and review the alt. */}
           <Figure
+            src={`${IMG}/print-dashboard.png`}
             alt="Screenshot of the brasa dashboard with an area drawn on the map and the results panel open."
-            placeholder="Screenshot: full dashboard with an area drawn and the panel filled in"
             caption="Overview of the screen: map on the left, results panel on the right."
           />
 
@@ -601,10 +580,9 @@ H(c, d) = x(VIIRS)                      if d ≥ 2012-01-01`}
               <strong>Clear:</strong> removes the area and resets the panel.
             </li>
           </ul>
-          {/* TODO print 2: drawing buttons -> `${IMG}/print-draw-tools.png` */}
           <Figure
+            src={`${IMG}/print-draw-tools.png`}
             alt="Screenshot of the drawing buttons on the map: polygon, rectangle and clear."
-            placeholder="Screenshot: drawing tools (polygon, rectangle, clear)"
           />
 
           <H3>2. Set the period</H3>
@@ -651,15 +629,13 @@ H(c, d) = x(VIIRS)                      if d ≥ 2012-01-01`}
               period, to see where fire concentrates.
             </li>
           </ul>
-          {/* TODO print 3: results panel -> `${IMG}/print-results-panel.png` */}
           <Figure
+            src={`${IMG}/print-results-panel.png`}
             alt="Screenshot of the results panel: indicator cards, anomaly sentence, year by month calendar and bars per year."
-            placeholder="Screenshot: results panel (cards, anomaly, calendar, bars)"
           />
-          {/* TODO print 4: density layer -> `${IMG}/print-density.png` */}
           <Figure
+            src={`${IMG}/print-destiny.png`}
             alt="Screenshot of the map with the density layer: hexagons coloured by fire days inside the drawn area, with a legend."
-            placeholder="Screenshot: density layer (hexagons) with legend"
           />
 
           <H3>5. Download the data</H3>
@@ -678,7 +654,6 @@ H(c, d) = x(VIIRS)                      if d ≥ 2012-01-01`}
           </div>
         </Section>
 
-        {/* ---------- Limitations ---------- */}
         <Section id="limitations" title="Limitations and next steps">
           <P>
             brasa measures how often fire was detected, not how much area burned.
@@ -733,8 +708,6 @@ H(c, d) = x(VIIRS)                      if d ≥ 2012-01-01`}
           IBGE Biomas 2019 · Grid: H3.
         </p>
       </main>
-
-      <Footer />
     </div>
   );
 }
