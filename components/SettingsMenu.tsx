@@ -100,18 +100,44 @@ export default function SettingsMenu({ locale }: { locale: Locale }) {
             </div>
           </fieldset>
 
-          <label className="mt-4 block text-sm font-semibold" htmlFor="vision-select">{t.colorVision}</label>
-          <select
-            id="vision-select"
-            value={vision}
-            onChange={(event) => updateVision(event.target.value as ColorVision)}
-            className="mt-1 w-full rounded-md border border-foreground/30 bg-background px-2 py-2 text-sm"
-          >
-            <option value="normal">{t.normalVision}</option>
-            <option value="tritanopia">{t.tritanopia}</option>
-            <option value="protanopia">{t.protanopia}</option>
-            <option value="deuteranopia">{t.deuteranopia}</option>
-          </select>
+          <fieldset className="mt-4">
+            <legend className="text-sm font-semibold">{t.colorVision}</legend>
+            <div className="mt-2 grid grid-cols-2 gap-2">
+              {([
+                ["normal", t.normalVision, "N"],
+                ["tritanopia", t.tritanopia, "T"],
+                ["protanopia", t.protanopia, "P"],
+                ["deuteranopia", t.deuteranopia, "D"],
+              ] as const).map(([value, label, mark]) => (
+                <label
+                  key={value}
+                  className={`flex min-w-0 cursor-pointer items-center gap-1.5 rounded-md border px-2 py-2 text-xs transition focus-within:outline-2 focus-within:outline-orange focus-within:outline-offset-1 ${
+                    vision === value
+                      ? "border-orange bg-orange/10 font-semibold"
+                      : "border-foreground/20 hover:border-foreground/50 hover:bg-foreground/5"
+                  }`}
+                >
+                  <input
+                    type="radio"
+                    name="color-vision"
+                    value={value}
+                    checked={vision === value}
+                    onChange={() => updateVision(value)}
+                    className="sr-only"
+                  />
+                  <span
+                    aria-hidden="true"
+                    className={`grid h-5 w-5 shrink-0 place-items-center rounded-full text-[0.7rem] font-semibold ${
+                      vision === value ? "bg-orange text-white" : "bg-foreground/10 text-foreground"
+                    }`}
+                  >
+                    {mark}
+                  </span>
+                  <span className="min-w-0 truncate">{label}</span>
+                </label>
+              ))}
+            </div>
+          </fieldset>
         </div>
       )}
     </div>

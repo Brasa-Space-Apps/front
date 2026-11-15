@@ -17,7 +17,7 @@
 
 :root[data-theme="dark"] {
   --foreground: #F5F1EA;
-  --background: #1B1B1A;
+  --background: #141414;
   --orange: #F18A5F;
   --green: #B5D47A;
   --surface: #24211D;
@@ -87,10 +87,6 @@ html[data-theme="dark"] .bg-\[\#1C1A17\] {
 
 html[data-theme="dark"] .hover\:bg-stone-100:hover {
   background-color: var(--surface-muted);
-}
-
-html[data-theme="dark"] .hover\:bg-black:hover {
-  background-color: #3A3835;
 }
 
 html[data-theme="dark"] .shadow-lg,
