@@ -1,18 +1,21 @@
 import Dashboard from "@/components/Dashboard";
-import Footer from "@/components/Footer";
+import DocumentLanguage from "@/components/DocumentLanguage";
 import Header from "@/components/Header";
+import RootLocaleRedirect from "@/components/RootLocaleRedirect";
 import type { Locale } from "@/lib/types";
 
 export default function Home() {
-  return <LocalizedHome locale="en" />;
+  return <><RootLocaleRedirect /><LocalizedHome locale="en" /></>;
 }
 
 export function LocalizedHome({ locale }: { locale: Locale }) {
   return (
-    <div lang={locale} className="flex flex-1 flex-col lg:h-dvh">
-      <Header locale={locale} />
-      <Dashboard locale={locale} />
-      <Footer locale={locale} />
-    </div>
+    <>
+      <DocumentLanguage locale={locale === "pt-BR" ? "pt-BR" : locale} />
+      <div lang={locale} className="flex min-h-dvh flex-1 flex-col">
+        <Header locale={locale} />
+        <Dashboard locale={locale} />
+      </div>
+    </>
   );
 }

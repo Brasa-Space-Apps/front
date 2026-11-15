@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useSyncExternalStore } from "react";
+import { useRouter } from "next/navigation";
 
 import { getCopy } from "@/lib/i18n";
 import type { ColorVision, Locale, Theme } from "@/lib/types";
@@ -34,6 +35,7 @@ function readVision(): ColorVision {
 
 export default function SettingsMenu({ locale }: { locale: Locale }) {
   const t = getCopy(locale);
+  const router = useRouter();
   const [open, setOpen] = useState(false);
   const theme = useSyncExternalStore(
     (onChange) => subscribe("brasa-theme", onChange),
@@ -70,18 +72,22 @@ export default function SettingsMenu({ locale }: { locale: Locale }) {
         aria-label={t.settings}
         aria-expanded={open}
         onClick={() => setOpen((value) => !value)}
-        className="rounded-md border border-foreground/30 bg-background px-3 py-2 text-sm font-medium hover:bg-foreground/10 focus:outline-2 focus:outline-orange"
+        className="rounded-md border border-line bg-surface px-3 py-2 text-sm font-medium text-fg hover:bg-surface-2 focus:outline-2 focus:outline-accent"
       >
         <span aria-hidden="true">⚙</span> {t.settings}
       </button>
       {open && (
-        <div className="absolute right-0 z-20 mt-2 w-72 rounded-lg border border-foreground/20 bg-background p-4 shadow-lg">
+        <div className="absolute right-0 z-20 mt-2 w-72 rounded-lg border border-line bg-surface p-4">
           <label className="block text-sm font-semibold" htmlFor="language-select">{t.language}</label>
           <select
             id="language-select"
             value={locale}
-            onChange={(event) => { window.location.href = languagePaths[event.target.value as Locale]; }}
-            className="mt-1 w-full rounded-md border border-foreground/30 bg-background px-2 py-2 text-sm"
+            onChange={(event) => {
+              const nextLocale = event.target.value as Locale;
+              localStorage.setItem("brasa-locale", nextLocale);
+              router.replace(languagePaths[nextLocale]);
+            }}
+            className="mt-1 w-full rounded-md border border-line bg-surface px-2 py-2 text-sm text-fg"
           >
             <option value="en">English</option>
             <option value="pt-BR">Português</option>
@@ -92,8 +98,8 @@ export default function SettingsMenu({ locale }: { locale: Locale }) {
             <legend className="text-sm font-semibold">{t.theme}</legend>
             <div className="mt-1 grid grid-cols-2 gap-2">
               {(["light", "dark"] as const).map((value) => (
-                <label key={value} className="flex items-center gap-2 rounded-md border border-foreground/20 px-2 py-2 text-sm">
-                  <input type="radio" name="theme" checked={theme === value} onChange={() => updateTheme(value)} />
+                <label key={value} className="flex items-center gap-2 rounded-md border border-line px-2 py-2 text-sm">
+                  <input type="radio" name="theme" checked={theme === value} onChange={() => updateTheme(value)} className="accent-accent" />
                   {value === "light" ? t.light : t.dark}
                 </label>
               ))}
@@ -113,8 +119,8 @@ export default function SettingsMenu({ locale }: { locale: Locale }) {
                   key={value}
                   className={`flex min-w-0 cursor-pointer items-center gap-1.5 rounded-md border px-2 py-2 text-xs transition focus-within:outline-2 focus-within:outline-orange focus-within:outline-offset-1 ${
                     vision === value
-                      ? "border-orange bg-orange/10 font-semibold"
-                      : "border-foreground/20 hover:border-foreground/50 hover:bg-foreground/5"
+                      ? "border-accent bg-accent/10 font-semibold"
+                      : "border-line hover:border-fg hover:bg-surface-2"
                   }`}
                 >
                   <input
@@ -128,7 +134,7 @@ export default function SettingsMenu({ locale }: { locale: Locale }) {
                   <span
                     aria-hidden="true"
                     className={`grid h-5 w-5 shrink-0 place-items-center rounded-full text-[0.7rem] font-semibold ${
-                      vision === value ? "bg-orange text-white" : "bg-foreground/10 text-foreground"
+                      vision === value ? "bg-accent text-accent-text" : "bg-surface-2 text-fg"
                     }`}
                   >
                     {mark}

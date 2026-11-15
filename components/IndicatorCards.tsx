@@ -6,10 +6,10 @@ import type { Stats } from "@/lib/types";
 
 function Card({ label, value, detail }: { label: string; value: string; detail?: string }) {
   return (
-    <div className="rounded-lg border border-stone-200 bg-white p-3">
-      <p className="text-xs text-stone-600">{label}</p>
-      <p className="mt-1 text-2xl font-semibold tabular-nums text-[#1C1A17]">{value}</p>
-      {detail && <p className="mt-0.5 text-xs text-stone-600">{detail}</p>}
+    <div className="border-l border-line p-3 first:border-l-0">
+      <p className="text-[0.68rem] uppercase tracking-[0.1em] text-muted">{label}</p>
+      <p className="mt-1 text-2xl font-semibold tabular-nums text-fg">{value}</p>
+      {detail && <p className="mt-0.5 text-xs text-muted">{detail}</p>}
     </div>
   );
 }
@@ -18,7 +18,7 @@ export default function IndicatorCards({ stats, locale }: { stats: Stats; locale
   const t = getCopy(locale);
   const { indicators: ind, area } = stats;
   return (
-    <div className="grid grid-cols-2 gap-3">
+    <div className="grid grid-cols-2 divide-y divide-line border-y border-line sm:grid-cols-4 sm:divide-y-0">
       <Card label={t.fireDaysInPeriod} value={fmt0(ind.total, locale)}
             detail={`${fmt(ind.annual_mean, locale)} ${t.perYear}`} />
       <Card label={t.worstYear} value={ind.worst_year ? String(ind.worst_year.year) : "—"}

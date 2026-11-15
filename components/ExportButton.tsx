@@ -31,14 +31,14 @@ export default function ExportButton({ query, locale }: { query: AreaQuery; loca
         type="button"
         onClick={onClick}
         disabled={busy}
-        className="w-full rounded-md bg-[#1C1A17] px-4 py-2.5 text-sm font-medium text-white hover:bg-black disabled:opacity-60"
+        className="w-full rounded-md bg-accent px-4 py-2.5 text-sm font-medium text-accent-text hover:opacity-90 disabled:opacity-60"
       >
         {busy ? t.preparing : t.export}
       </button>
-      <p className="mt-1 text-xs text-stone-600">
+      <p className="mt-1 text-xs text-muted">
         {t.exportHelp}
       </p>
-      {error && <p role="alert" className="mt-1 text-xs text-[#B4441B]">{error}</p>}
+      {error && <p role="alert" className="mt-1 text-xs text-[var(--danger)]">{error}</p>}
     </div>
   );
 }

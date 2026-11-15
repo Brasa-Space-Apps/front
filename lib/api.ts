@@ -34,9 +34,9 @@ async function post<T>(route: string, body: AreaQuery, signal?: AbortSignal): Pr
   return r.json();
 }
 
-export async function getMeta(): Promise<Meta> {
+export async function getMeta(signal?: AbortSignal): Promise<Meta> {
   if (USE_MOCK) return mock<Meta>(() => import("@/mocks/meta.json"));
-  const r = await fetch(`${API}/meta`);
+  const r = await fetch(`${API}/meta`, { signal });
   if (!r.ok) throw new ApiError(r.status, "Could not load /meta");
   return r.json();
 }

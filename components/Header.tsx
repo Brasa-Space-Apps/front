@@ -7,10 +7,10 @@ import SettingsMenu from "@/components/SettingsMenu";
 export default function Header({ locale }: { locale: Locale }) {
   const t = getCopy(locale);
   return (
-    <header className="flex flex-wrap items-center justify-between gap-2 border-b border-foreground/10 px-4 py-3">
+    <header className="flex flex-wrap items-center justify-between gap-2 border-b border-line px-4 py-3">
       <div className="flex items-baseline gap-3">
         <span className="text-2xl font-semibold text-green">brasa</span>
-        <p className="text-sm text-foreground/80">
+        <p className="text-sm text-muted">
           {t.tagline}
         </p>
       </div>

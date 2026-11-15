@@ -27,12 +27,7 @@ export const formatDate = (iso: string, locale: Locale = "en") =>
 
 // Brand
 export const BRAND = {
-  orange: "#A63C16",
   leaf: "#4E6B2C",
-  ink: "#1C1A17",
-  ground: "#F6F5F2",
-  blue: "#2B6CB0", // "below normal" side of the diverging scale
-  grey: "#A8A29E",
 };
 
 // Viridis, 5 stops (colour-blind safe), for counts
