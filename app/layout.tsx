@@ -31,7 +31,7 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: "brasa · Brazilian Pantanal",
-  description: "Fire-day history in the Brazilian Pantanal.",
+  description: "Fire occurrence history in the Brazilian Pantanal.",
   metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000"),
   alternates: {
     languages: {
