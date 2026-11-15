@@ -1,17 +1,94 @@
 @import "tailwindcss";
 
 :root {
-  --orange: #D4501C;
+  --bg: #F6F3EE;
+  --surface: #FFFFFF;
+  --surface-2: #EEE9E1;
+  --border: #D1C9BE;
+  --text: #241F1A;
+  --text-muted: #5F574E;
+  --accent: #B8431A;
+  --accent-text: #FFFFFF;
   --green: #4E6B2C;
-  --foreground: #1C1A17;
-  --background: #F6F5F2;
+  --danger: #9B3515;
+  --danger-surface: #FBEDEA;
+  --warning: #7A4B08;
+  --warning-surface: #FFF3D6;
   color-scheme: light;
+  --logo-leaf: #4E6B2C;
+  --logo-ember: #D4501C;
+}
+
+:root[data-theme="dark"] {
+  --bg: #121110;
+  --surface: #1B1917;
+  --surface-2: #292521;
+  --border: #5A5148;
+  --text: #F4EEE6;
+  --text-muted: #C8BDB1;
+  --accent: #E0642E;
+  --accent-text: #121110;
+  --green: #B5D47A;
+  --danger: #FF9B78;
+  --danger-surface: #44251D;
+  --warning: #FFD27A;
+  --warning-surface: #3B2B16;
+  color-scheme: dark;
+  --logo-leaf: #7FA046;
+  --logo-ember: #EE6A2C;
+}
+
+html[data-color-vision="protanopia"] body {
+  filter: url("#protanopia");
+}
+
+html[data-color-vision="deuteranopia"] body {
+  filter: url("#deuteranopia");
+}
+
+html[data-color-vision="tritanopia"] body {
+  filter: url("#tritanopia");
+}
+
+html[data-theme="dark"] .maplibregl-ctrl-group,
+html[data-theme="dark"] .maplibregl-ctrl-attrib {
+  background: var(--surface);
+  color: var(--text);
+}
+
+html[data-theme="dark"] .maplibregl-ctrl-group button {
+  background-color: var(--surface);
+  border-color: var(--border);
+  filter: invert(1) hue-rotate(180deg);
+}
+
+html[data-theme="dark"] .maplibregl-canvas {
+  filter: brightness(0.68) saturate(0.82);
+}
+
+html[data-theme="dark"] .maplibregl-ctrl-attrib a,
+html[data-theme="dark"] .maplibregl-ctrl-attrib {
+  color: var(--text-muted);
+}
+
+html[data-theme="dark"] input,
+html[data-theme="dark"] select {
+  color-scheme: dark;
+}
+
+html[data-theme="dark"] .echarts svg text {
+  fill: var(--text) !important;
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --color-orange: var(--orange);
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-line: var(--border);
+  --color-fg: var(--text);
+  --color-muted: var(--text-muted);
+  --color-accent: var(--accent);
+  --color-accent-text: var(--accent-text);
   --color-green: var(--green);
   --font-sans: var(--font-outfit);
   --font-text: var(--font-inter);
@@ -19,6 +96,79 @@
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
+  background: var(--bg);
+  color: var(--text);
 }
+
+.maplibregl-ctrl-group,
+.maplibregl-ctrl-attrib {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  color: var(--text);
+}
+
+.maplibregl-ctrl-group button {
+  border-color: var(--border);
+}
+
+.maplibregl-ctrl-attrib a {
+  color: var(--text);
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.animate-fade-in-up {
+  animation: fadeInUp 220ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.animate-fade-in {
+  animation: fadeIn 180ms ease-out both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-fade-in-up,
+  .animate-fade-in {
+    animation: none;
+  }
+}
+
+.panel-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: #d6d3cd transparent;
+}
+
+.panel-scroll::-webkit-scrollbar {
+  width: 6px;
+}
+
+.panel-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.panel-scroll::-webkit-scrollbar-thumb {
+  background-color: #d6d3cd;
+  border-radius: 9999px;
+}
+
+.panel-scroll::-webkit-scrollbar-thumb:hover {
+  background-color: #a8a29e;
+}
+

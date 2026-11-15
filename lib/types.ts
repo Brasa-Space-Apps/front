@@ -2,6 +2,9 @@
 // API contract: mirrors back/app/schemas.py. Do not rename fields.
 
 export type Geometry = GeoJSON.Polygon | GeoJSON.MultiPolygon;
+export type Locale = "pt-BR" | "en" | "es";
+export type Theme = "light" | "dark";
+export type ColorVision = "normal" | "tritanopia" | "protanopia" | "deuteranopia";
 
 export interface AreaQuery {
   geometry: Geometry;
